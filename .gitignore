@@ -1,0 +1,74 @@
+# Prebuilt external libraries
+External/sysroot/
+
+# IDE
+.cproject
+.classpath
+.project
+.metadata/
+**/.settings/
+**/.idea/
+
+# Version header
+version.h
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+*.d
+obj/*
+Core/obj/*
+Core/tests/obj/*
+visualcpp/x86
+visualcpp/x64
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+## Java
+*.class
+*.war
+*.ear
+hs_err_pid*
+
+com_crashlytics_export_strings.xml
+
+## Eclipse
+*.tmp
+*.bak
+*.swp
+*~.nib
+.loadpath
+.externalToolBuilders/
+*.launch
+
+## OS Specific
+.DS_Store
+Thumbs.db
+
+## Generated documents
+
+doxygen_doc/html

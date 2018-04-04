@@ -1,0 +1,319 @@
+#include "mfilesystem.h"
+
+#include <stdexcept>
+#include <stdlib.h>
+#include <cerrno>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <memory>
+#include <time.h>
+#include <errno.h>
+#include <string.h>
+
+#if (defined _WIN32 || defined WINDOWS || defined __CYGWIN__)
+#include <windows.h>
+#endif
+
+namespace PATH_CLASS
+{
+FILEMAPCL FILENAMES;
+unsigned long get_file_size( const char *path )
+{
+    unsigned long filesize = -1;
+    struct stat statbuff;
+    if( stat( path, &statbuff ) < 0 ) {
+        return filesize;
+    } else {
+        filesize = statbuff.st_size;
+    }
+    return filesize;
+}
+#if (defined _WIN32 || defined __WIN32__)
+bool do_mkdir( std::string const &path, int const mode )
+{
+    ( void )mode; //not used on windows
+    return mkdir( path.c_str() ) == 0;
+}
+#else
+bool do_mkdir( std::string const &path, int const mode )
+{
+    return mkdir( path.c_str(), mode ) == 0;
+}
+#endif
+bool assure_dir_exist( std::string const &path )
+{
+    DIR *dir = opendir( path.c_str() );
+    if( dir != nullptr ) {
+        closedir( dir );
+        return true;
+    }
+    return do_mkdir( path, 0777 );
+}
+
+bool file_exist( const std::string &path )
+{
+    struct stat buffer;
+    return ( stat( path.c_str(), &buffer ) == 0 );
+}
+#if (defined _WIN32 || defined __WIN32__)
+bool remove_file( const std::string &path )
+{
+    return DeleteFile(path.c_str())!=0;
+}
+#else
+bool remove_file( const std::string &path )
+{
+    return unlink( path.c_str() ) == 0;
+}
+#endif
+
+#if (defined _WIN32 || defined __WIN32__)
+bool rename_file( const std::string &old_path, const std::string &new_path )
+{
+    // Windows rename function does not override existing targets, so we
+    // have to remove the target to make it compatible with the linux rename
+    if( file_exist( new_path ) ) {
+        if( !remove_file( new_path ) ) {
+            return false;
+        }
+    }
+    return rename( old_path.c_str(), new_path.c_str() ) == 0;
+}
+#else
+bool rename_file( const std::string &old_path, const std::string &new_path )
+{
+    return rename( old_path.c_str(), new_path.c_str() ) == 0;
+}
+#endif
+bool is_directory_stat( std::string const &full_path )
+{
+    struct stat result;
+    if( stat( full_path.c_str(), &result ) != 0 ) {
+        auto const e_str = strerror( errno );
+        throw std::runtime_error( std::string( "stat [" ) + full_path + std::string( "] failed with \"" ) +
+                                  e_str + "\"." );
+        return false;
+    }
+
+    return S_ISDIR( result.st_mode );
+}
+#if defined (__MINGW32__)
+bool is_directory( dirent const &entry, std::string const &full_path )
+{
+    // no dirent::d_type
+    ( void )entry; //not used for mingw
+    return is_directory_stat( full_path );
+}
+#else
+bool is_directory( dirent const &entry, std::string const &full_path )
+{
+    if( entry.d_type == DT_DIR ) {
+        return true;
+    } else if( entry.d_type != DT_UNKNOWN ) {
+        return false;
+    }
+
+    return is_directory_stat( full_path );
+}
+#endif
+void init_user_dir( const char *ud )
+{
+    char *cwd;
+#if (defined _WIN32 || defined WINDOWS )
+    if( ( cwd = _getcwd( nullptr, 0 ) ) == nullptr )
+#else
+    if( ( cwd = getcwd( nullptr, 0 ) ) == nullptr )
+#endif
+        throw std::runtime_error( std::string( "mfilesystem.cpp:getcwd() Failed!\n" ) );
+    std::string bdir = std::string( cwd );
+    char ch;
+    ch = bdir.at( bdir.length() - 1 );
+    if( ch != '/' || ch != '\\' ) {
+#if !(defined _WIN32 || defined WINDOWS || defined __CYGWIN__)
+        bdir.push_back( '/' );
+#else
+        bdir.push_back( '\\' );
+#endif
+    }
+    free( cwd );
+    FILENAMES["basedir"] = bdir;
+    std::string udir = std::string( ud );
+    if( udir.empty() ) {
+#if !(defined _WIN32 || defined WINDOWS || defined __CYGWIN__)
+        const char *user_dir = getenv( "HOME" );
+        udir = std::string( user_dir ) + "/.OCServer/";
+#else
+        const char *user_dir = getenv( "LOCALAPPDATA" );
+        udir = std::string( user_dir ) + "/OCServer/";
+#endif
+    }
+    assure_dir_exist( udir );
+    FILENAMES["userdir"] = udir;
+}
+void update_datadir( void )
+{
+    assure_dir_exist( FILENAMES["basedir"] + "modules" );
+    update_pathname( "librarydir", FILENAMES["basedir"] + "modules" );
+    assure_dir_exist( FILENAMES["userdir"] + "logs" );
+    update_pathname( "logdir", FILENAMES["userdir"] + "logs" );
+    assure_dir_exist( FILENAMES["basedir"] + "Java" );
+    update_pathname( "javadir", FILENAMES["basedir"] + "Java" );
+}
+void update_pathname( std::string name, std::string path )
+{
+    char ch;
+    ch = path.at( path.length() - 1 );
+    if( ch != '/' || ch != '\\' ) {
+#if !(defined _WIN32 || defined WINDOWS || defined __CYGWIN__)
+        path.push_back( '/' );
+#else
+        path.push_back( '\\' );
+#endif
+    }
+    FILEMAPCL::iterator iter;
+    iter = FILENAMES.find( name );
+    if( iter != FILENAMES.end() ) {
+        FILENAMES[name] = path;
+    } else {
+        FILENAMES.insert( std::pair<std::string, std::string>( name, path ) );
+    }
+}
+std::string get_pathname( std::string name )
+{
+    return FILENAMES[name];
+}
+void check_logs()
+{
+    using namespace std;
+    string dir = FILENAMES["logdir"];
+    vector<string> files;
+    GetFilesInDirectory( files, dir );
+    vector<string>::iterator iter;
+    iter = files.begin();
+    for( ; iter != files.end(); iter++ ) {
+        string s_path = *iter;
+        time_t t = time( 0 );
+        char tmp[15];
+        strftime( tmp, sizeof( tmp ), "%Y%m%d%H%M%S", localtime( &t ) );
+        if( get_file_size( s_path.c_str() ) >= 1000000 ) //current log too large move it
+            if( s_path.substr( s_path.length() - 4, 4 ) == ".log" ) {
+                rename_file( s_path, s_path + "." + tmp );
+            }
+    }
+}
+
+void GetFilesInDirectory( std::vector<std::string> &out, const std::string &directory )
+{
+#if (defined _WIN32 || defined WINDOWS || defined __CYGWIN__)
+    HANDLE dir;
+    WIN32_FIND_DATAA file_data;
+    if( ( dir = FindFirstFileA( ( directory + "/*" ).c_str(), &file_data ) ) == INVALID_HANDLE_VALUE ) {
+        return;    /* No files found */
+    }
+    do {
+        char ch;
+        ch = directory.at( directory.length() - 1 );
+        std::string full_file_name;
+        const std::string file_name = file_data.cFileName;
+        if( ch == '\\' ) {
+            full_file_name = directory + file_name;
+        } else {
+            full_file_name = directory + "\\" + file_name;
+        }
+        const bool is_directory = ( file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) != 0;
+
+        if( file_name[0] == '.' ) {
+            continue;
+        }
+
+        if( is_directory ) {
+            continue;
+        }
+
+        out.push_back( full_file_name );
+    } while( FindNextFileA( dir, &file_data ) );
+
+    FindClose( dir );
+#else
+    DIR *dir;
+#if (defined MACOSX)
+    struct dirent *ent;
+    struct stat st;
+#else
+    class dirent *ent;
+    class stat st;
+#endif
+    dir = opendir( directory.c_str() );
+    while( ( ent = readdir( dir ) ) != NULL ) {
+        const std::string file_name = ent->d_name;
+        char ch;
+        ch = directory.at( directory.length() - 1 );
+        std::string full_file_name;
+        if( ch == '/' ) {
+            full_file_name = directory + file_name;
+        } else {
+            full_file_name = directory + '/' + file_name;
+        }
+        if( file_name[0] == '.' ) {
+            continue;
+        }
+
+        if( stat( full_file_name.c_str(), &st ) == -1 ) {
+            continue;
+        }
+
+        const bool is_directory = ( st.st_mode & S_IFDIR ) != 0;
+
+        if( is_directory ) {
+            continue;
+        }
+
+        out.push_back( full_file_name );
+    }
+    closedir( dir );
+#endif
+}
+
+std::string find_translated_file( const std::string &pathid,
+                                  const std::string &extension, const std::string &fallbackid )
+{
+    const std::string base_path = FILENAMES[pathid];
+
+#if defined LOCALIZE && ! defined __CYGWIN__
+    std::string local_path_1; // complete locale: en_NZ
+    std::string local_path_2; // only the first part: en
+    std::string loc_name;
+    if( get_option<std::string>( "USE_LANG" ).empty() ) {
+        const char *v = setlocale( LC_ALL, NULL );
+        if( v != NULL ) {
+            loc_name = v;
+        }
+    } else {
+        loc_name = get_option<std::string>( "USE_LANG" );
+    }
+    if( loc_name == "C" ) {
+        loc_name = "en";
+    }
+    if( !loc_name.empty() ) {
+        const size_t dotpos = loc_name.find( '.' );
+        if( dotpos != std::string::npos ) {
+            loc_name.erase( dotpos );
+        }
+        const std::string local_path_1 = base_path + loc_name + extension;
+        if( file_exist( local_path_1 ) ) {
+            return local_path_1;
+        }
+        const size_t p = loc_name.find( '_' );
+        if( p != std::string::npos ) {
+            const std::string local_path_2 = base_path + loc_name.substr( 0, p ) + extension;
+            if( file_exist( local_path_2 ) ) {
+                return local_path_2;
+            }
+        }
+    }
+#endif
+    ( void ) extension;
+    return FILENAMES[fallbackid];
+}
+
+}//namespace
