@@ -13,6 +13,8 @@ External/sysroot/
 version.h
 
 # Compiled Object files
+OCServer
+*.log
 *.slo
 *.lo
 *.o
