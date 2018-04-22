@@ -2,9 +2,9 @@
 External/sysroot/
 
 # IDE
-.cproject
+# .cproject
 .classpath
-.project
+# .project
 .metadata/
 **/.settings/
 **/.idea/

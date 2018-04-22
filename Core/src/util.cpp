@@ -19,7 +19,7 @@ void util::int32_to_buf( char *buf, int i, int value )
     buf[i + 1] = ( char )( value >> 16 );
     buf[i + 0] = ( char )( value >> 24 );
 }
-void util::int64_to_buf( char *buf, int i, long value )
+void util::int64_to_buf( char *buf, int i, uint64_t value )
 {
     buf[i + 7] = ( char ) value;
     buf[i + 6] = ( char )( value >> 8 );

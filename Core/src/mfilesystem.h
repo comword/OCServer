@@ -29,7 +29,7 @@ typedef std::map<std::string, std::string> FILEMAPCL;
 
 namespace PATH_CLASS
 {
-extern FILEMAPCL FILENAMES;
+DLL_PUBLIC extern FILEMAPCL FILENAMES;
 unsigned long get_file_size( const char *path );
 bool do_mkdir( std::string const &path, int const mode );
 bool assure_dir_exist( std::string const &path );
@@ -43,7 +43,5 @@ DLL_PUBLIC void update_pathname( std::string name, std::string path );
 DLL_PUBLIC std::string get_pathname( std::string name );
 DLL_PUBLIC void check_logs();
 void GetFilesInDirectory( std::vector<std::string> &out, const std::string &directory );
-std::string find_translated_file( const std::string &pathid, const std::string &extension,
-                                  const std::string &defaultid );
 }
 #endif

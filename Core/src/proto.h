@@ -71,6 +71,7 @@ class ProtoIn
             seek( position );
         }
         virtual ~ProtoIn() {}
+        std::istream &getStream();
         struct ProtoHead readHead();
         void peakHead( ProtoHead &head );
         bool skipToTag( int tag );
@@ -236,7 +237,7 @@ class ProtoDisplay
         ProtoDisplay( std::istream &s ) : input( s ) {}
         virtual ~ProtoDisplay() {}
         void do_display();
-        void display_Proto();
+        bool display_Proto();
     private:
         void wrap( std::string fieldName );
         std::string getNamebyType( char tpye );
@@ -328,6 +329,7 @@ class ProtoDisplay
             bSep = o_bSep;
             return;
         }
+        void displayStruct( std::string fieldName );
 };
 
 #endif

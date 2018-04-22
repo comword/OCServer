@@ -73,6 +73,8 @@ struct DebugFile {
         if( dir & D_THROW ) {
             std::stringstream err;
             err << v;
+            file.flush();
+            std::cout.flush();
             throw std::runtime_error( err.str() );
         }
         file.flush();
@@ -96,6 +98,8 @@ struct DebugFile {
         if( dir & D_THROW ) {
             std::stringstream err;
             err << f;
+            file.flush();
+            std::cout.flush();
             throw std::runtime_error( err.str() );
         }
         return *this;

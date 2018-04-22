@@ -5,12 +5,16 @@ ROOT=$(cd "${0%/*}" && echo $PWD)
 UNAME=`uname`
 if [ "$UNAME" == "Darwin" ]; then
    JAVA_HOME=$(/usr/libexec/java_home)
+   JVM_PATH=$(dirname $(find $JAVA_HOME -name "libjvm*"))
    # prepend our lib path to LD_LIBRARY_PATH
-   export DYLD_LIBRARY_PATH=$ROOT/Core:$ROOT/External/sysroot/lib:$JAVA_HOME/jre/lib/amd64/server:$DYLD_LIBRARY_PATH
+   export DYLD_LIBRARY_PATH=$ROOT/Core:$ROOT/External/sysroot/lib:$JVM_PATH:$DYLD_LIBRARY_PATH
 elif [ "$UNAME" == "Linux" ]; then
    JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))
+   JVM_PATH=$(dirname $(find $JAVA_HOME -name "libjvm*"))
    # prepend our lib path to LD_LIBRARY_PATH
-   export LD_LIBRARY_PATH=$ROOT/Core:$ROOT/External/sysroot/lib:$JAVA_HOME/jre/lib/amd64/server:$LD_LIBRARY_PATH
+   export LD_LIBRARY_PATH=$ROOT/Core:$ROOT/External/sysroot/lib:$JVM_PATH:$LD_LIBRARY_PATH
+else
+  echo Unsupported platform.
 fi
 ulimit -n 2048
-$ROOT/OCServer "$@"
+$DEBUGER $ROOT/OCServer "$@"

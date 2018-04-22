@@ -2,7 +2,7 @@
 #include "catch.hpp"
 #include "mfilesystem.h"
 #include "debug.h"
-#include "version.h"
+#include "config.h"
 #include <stdio.h>
 #include <vector>
 
@@ -22,6 +22,7 @@ int main( int argc, const char *argv[] )
     limitDebugLevel(D_ALL);
     limitDebugClass(DC_ALL);
     DebugLog( D_INFO, D_MAIN ) << "Version: " << VERSION;
+    conf = new Configure( PATH_CLASS::FILENAMES["userdir"] + "config.json" );
     result = session.run();
     deinitDebug();
     return result;

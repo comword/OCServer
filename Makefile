@@ -1,4 +1,4 @@
-RELEASE_FLAGS = -Werror
+# RELEASE_FLAGS = -Werror
 WARNINGS = -Wall -Wextra
 ifeq ($(shell sh -c 'uname -o 2>/dev/null || echo not'),Cygwin)
   DEBUG =-g
@@ -6,6 +6,11 @@ else
   DEBUG =-g -D_GLIBCXX_DEBUG
 endif
 VERSION = 0.0.1
+VERSION_STR=$(shell VERSION_STRING=$(VERSION) ; \
+            [ -e ".git" ] && GITVERSION=$$( git describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*" ) && VERSION_STRING=$$GITVERSION ; \
+            echo $$VERSION_STRING \
+         )
+DEFINES += -DVERSION=\"$(VERSION_STR)\"
 TARGET_NAME = OCServer
 BUILD_DIR = $(CURDIR)
 SRC_DIR = src
@@ -118,9 +123,9 @@ ifndef RELEASE
 endif
 
 ifeq ($(shell sh -c 'uname -o 2>/dev/null || echo not'),Cygwin)
-    OTHERS +=-std=gnu++11
+    OTHERS +=-std=gnu++14
   else
-    OTHERS +=-std=c++11
+    OTHERS +=-std=c++14
 endif
 
 CXXFLAGS += $(WARNINGS) $(DEBUG) $(PROFILE) $(OTHERS) -MMD
@@ -250,7 +255,8 @@ ifeq ($(TARGETSYSTEM), LINUX)
     DEFINES += -DPREFIX="$(PREFIX)"
   endif
   JAVA_HOME:=$(shell echo $$(dirname $$(dirname $$(readlink -f $$(which javac)))))
-  LDFLAGS += -L$(JAVA_HOME)/jre/lib/amd64/server -ljvm
+  JVM_PATH:=$(shell dirname $$(find $(JAVA_HOME) -name "libjvm*"))
+  LDFLAGS += -L$(JVM_PATH) -ljvm
   EXTENSION =
   TARGET := $(TARGET)$(EXTENSION)
   CORE_LIB := libOCSCore.so
@@ -262,7 +268,9 @@ ifeq ($(TARGETSYSTEM), OSX)
     DEFINES += -DPREFIX="$(PREFIX)"
   endif
   JAVA_HOME:=$(shell /usr/libexec/java_home)
-  LDFLAGS += -L$(JAVA_HOME)/jre/lib/amd64/server -ljvm
+  JVM_PATH:=$(shell dirname $$(find $(JAVA_HOME) -name "libjvm*"))
+  CXXFLAGS += -I/usr/local/opt/openssl/include
+  LDFLAGS += -L/usr/local/opt/openssl/lib -L$(JVM_PATH) -ljvm
   EXTENSION =
   TARGET := $(TARGET)$(EXTENSION)
   CORE_LIB := libOCSCore.dylib
@@ -286,7 +294,9 @@ ifeq ($(BACKTRACE),1)
   DEFINES += -DBACKTRACE
 endif
 
-all: version $(TARGET) $(L10N)
+LDFLAGS += -lssl -lcrypto
+
+all: $(TARGET) $(L10N)
 	@
 $(TARGET): $(ODIR) $(OBJS) Core/$(CORE_LIB)
 	+$(LD) $(W32FLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS) -lOCSCore -luv
@@ -296,25 +306,17 @@ ifdef RELEASE
   endif
 endif
 
-.PHONY: version
-version:
-	@( VERSION_STRING=$(VERSION) ; \
-            [ -e ".git" ] && GITVERSION=$$( git describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*" ) && VERSION_STRING=$$GITVERSION ; \
-            [ -e "$(SRC_DIR)/version.h" ] && OLDVERSION=$$(grep VERSION $(SRC_DIR)/version.h|cut -d '"' -f2) ; \
-            if [ "x$$VERSION_STRING" != "x$$OLDVERSION" ]; then echo "#define VERSION \"$$VERSION_STRING\"" | tee $(SRC_DIR)/version.h ; fi \
-         )
 $(ODIR):
 	mkdir -p $(ODIR)
 
 $(ODIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(DEFINES) $(CXXFLAGS) -c $< -o $@
 
-export ODIR _OBJS LDFLAGS CXX LD AR W32FLAGS DEFINES CXXFLAGS
+export ODIR _OBJS LDFLAGS CXX LD AR STRIP W32FLAGS DEFINES CXXFLAGS VERSION_STR TARGETSYSTEM
 clean: clean-Core
 	rm -rf *$(TARGET_NAME) *$(TARGET_NAME).a *$(TARGET_NAME).exe
 	rm -rf doxygen_doc/html
 	rm -rf *obj
-	rm -f $(SRC_DIR)/version.h
 
 astyle:
 	$(ASTYLE_BINARY) --options=.astylerc -n $(shell cat astyled_whitelist)
@@ -322,17 +324,20 @@ astyle:
 astyle-all: $(SOURCES) $(HEADERS)
 	$(ASTYLE_BINARY) --options=.astylerc -n $(SOURCES) $(HEADERS) $(HPPS)
 
-unexport LDFLAGS
-unexport CXXFLAGS
-
 clean-Core:
 	$(MAKE) -C Core clean
 
 Core/$(CORE_LIB): Core/src/org_gtdev_oc_server_JNInterface.h
 	$(MAKE) -C Core
 
+Core: Core/src/org_gtdev_oc_server_JNInterface.h
+	$(MAKE) -C Core
+
 Core/src/org_gtdev_oc_server_JNInterface.h:
 	javac -h Core/src Java/src/org/gtdev/oc/server/JNInterface.java
+
+unexport LDFLAGS
+unexport CXXFLAGS
 
 external:
 	@for dir in External; do make -C $$dir ; echo; done
@@ -340,4 +345,4 @@ external:
 docs:
 	doxygen doxygen_doc/doxygen_conf
 
-.PHONY: clean-Core clean astyle astyle-all external docs
+.PHONY: clean-Core Core clean astyle astyle-all external docs

@@ -54,72 +54,12 @@ ifndef RELEASE
 endif
 
 ifeq ($(shell sh -c 'uname -o 2>/dev/null || echo not'),Cygwin)
-    OTHERS +=-std=gnu++11
+    OTHERS +=-std=gnu++14
   else
-    OTHERS +=-std=c++11
+    OTHERS +=-std=c++14
 endif
 
 CXXFLAGS += $(WARNINGS) $(DEBUG) $(PROFILE) $(OTHERS) -MMD
-ifeq ($(NATIVE),)
-  ifeq ($(CROSS),)
-    ifeq ($(shell sh -c 'uname -o 2>/dev/null || echo not'),Cygwin)
-      DEFINES += -DNO_CPP11_STRING_CONVERSIONS
-      TARGETSYSTEM=CYGWIN
-    else
-      TARGETSYSTEM=LINUX
-    endif
-  endif
-endif
-# Linux 64-bit
-ifeq ($(NATIVE), linux64)
-  CXXFLAGS += -m64
-  LDFLAGS += -m64
-  TARGETSYSTEM=LINUX
-else
-  # Linux 32-bit
-  ifeq ($(NATIVE), linux32)
-    CXXFLAGS += -m32
-    LDFLAGS += -m32
-    TARGETSYSTEM=LINUX
-  endif
-endif
-
-ifeq ($(NATIVE), osx)
-  ifdef CLANG
-    OSX_MIN = 10.7
-  else
-    OSX_MIN = 10.5
-  endif
-  DEFINES += -DMACOSX
-	#OTHERS += -stdlib=libc++
-  #CXXFLAGS += -mmacosx-version-min=$(OSX_MIN)
-  #LDFLAGS += -mmacosx-version-min=$(OSX_MIN)
-  TARGETSYSTEM=OSX
-
-endif
-
-# Win32 (MinGW32 or MinGW-w64(32bit)?)
-ifeq ($(NATIVE), win32)
-# Any reason not to use -m32 on MinGW32?
-  TARGETSYSTEM=WINDOWS
-else
-  ifeq ($(NATIVE), win64)
-    CXXFLAGS += -m64
-    LDFLAGS += -m64
-    TARGETSYSTEM=WINDOWS
-  endif
-endif
-
-# Cygwin
-ifeq ($(NATIVE), cygwin)
-  TARGETSYSTEM=CYGWIN
-endif
-
-# MXE cross-compile to win32
-ifneq (,$(findstring mingw32,$(CROSS)))
-  DEFINES += -DCROSS_LINUX
-  TARGETSYSTEM=WINDOWS
-endif
 
 ifeq ($(TARGETSYSTEM),WINDOWS)
   BACKTRACE = 0
@@ -184,9 +124,10 @@ ifeq ($(TARGETSYSTEM), LINUX)
     DEFINES += -DPREFIX="$(PREFIX)"
   endif
   JAVA_HOME:=$(shell echo $$(dirname $$(dirname $$(readlink -f $$(which javac)))))
+  JVM_PATH:=$(shell dirname $$(find $(JAVA_HOME) -name "libjvm*"))
   CXXFLAGS += -fPIC -fvisibility=hidden
   CXXFLAGS += -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
-  LDFLAGS += -fPIC -L$(JAVA_HOME)/jre/lib/amd64/server -ljvm
+  LDFLAGS += -fPIC -L$(JVM_PATH) -ljvm
   EXTENSION = .so
   TARGET := $(TARGET)$(EXTENSION)
 endif
@@ -197,10 +138,11 @@ ifeq ($(TARGETSYSTEM), OSX)
     DEFINES += -DPREFIX="$(PREFIX)"
   endif
   JAVA_HOME:=$(shell /usr/libexec/java_home)
+  JVM_PATH:=$(shell dirname $$(find $(JAVA_HOME) -name "libjvm*"))
   SHAREDMARK = -dynamiclib
   CXXFLAGS += -I/usr/local/opt/openssl/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/darwin
   CXXFLAGS += -fPIC -fvisibility=hidden
-  LDFLAGS += -L/usr/local/opt/openssl/lib -L$(JAVA_HOME)/jre/lib/amd64/server -ljvm
+  LDFLAGS += -L/usr/local/opt/openssl/lib -L$(JVM_PATH) -ljvm
   EXTENSION = .dylib
   TARGET := $(TARGET)$(EXTENSION)
 endif
@@ -220,7 +162,7 @@ endif
 
 LDFLAGS += -lssl -lcrypto
 
-all: version $(TARGET) $(L10N) tests
+all: $(TARGET) $(L10N) tests
 	@
 $(TARGET): $(ODIR) $(OBJS)
 	+$(LD) $(SHAREDMARK) $(W32FLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
@@ -233,25 +175,16 @@ endif
 $(BUILD_PREFIX)$(TARGET_NAME).ar: $(ODIR) $(OBJS)
 	$(AR) rcs $(BUILD_PREFIX)$(TARGET_NAME).ar $(OBJS)
 
-.PHONY: version
-version:
-	@( VERSION_STRING=$(VERSION) ; \
-            [ -e ".git" ] && GITVERSION=$$( git describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*" ) && VERSION_STRING=$$GITVERSION ; \
-            [ -e "$(SRC_DIR)/version.h" ] && OLDVERSION=$$(grep VERSION $(SRC_DIR)/version.h|cut -d '"' -f2) ; \
-            if [ "x$$VERSION_STRING" != "x$$OLDVERSION" ]; then echo "#define VERSION \"$$VERSION_STRING\"" | tee $(SRC_DIR)/version.h ; fi \
-         )
-
 $(ODIR):
 	mkdir -p $(ODIR)
 
 $(ODIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(DEFINES) $(CXXFLAGS) -c $< -o $@
 
-export ODIR _OBJS LDFLAGS CXX W32FLAGS DEFINES CXXFLAGS
+export ODIR _OBJS LDFLAGS CXX W32FLAGS DEFINES CXXFLAGS VERSION
 clean: clean-tests
 	rm -rf *$(TARGET_NAME).dll *$(TARGET_NAME).so *$(TARGET_NAME).dylib *$(TARGET_NAME).a *$(TARGET_NAME).ar
 	rm -rf *obj
-	rm -f $(SRC_DIR)/version.h
 astyle:
 	$(ASTYLE_BINARY) --options=.astylerc -n $(shell cat astyled_whitelist)
 
@@ -261,7 +194,7 @@ astyle-all: $(SOURCES) $(HEADERS)
 astyle-all-tests:
 	$(MAKE) -C tests astyle-all
 
-tests: version $(BUILD_PREFIX)$(TARGET_NAME).ar
+tests: $(BUILD_PREFIX)$(TARGET_NAME).ar
 	$(MAKE) -C tests
 
 clean-tests:

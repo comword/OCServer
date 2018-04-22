@@ -9,6 +9,11 @@ ProtoError::ProtoError( const std::string &msg )
 {
 }
 
+std::istream &ProtoIn::getStream()
+{
+    return *stream;
+}
+
 void ProtoIn::error( std::string message, int offset )
 {
     std::ostringstream err;
@@ -150,13 +155,13 @@ struct ProtoIn::ProtoHead ProtoIn::readHead()
     res.tag = 0;
     res.tag = ( b & 0xF0 ) >> 4;
     if( res.tag == 15 ) {
-    	stream->get( b );
-		res.tag = b;
-		res.len = 2;
-		return res;
+        stream->get( b );
+        res.tag = b;
+        res.len = 2;
+        return res;
     } else {
-    	res.len = 1;
-    	return res;
+        res.len = 1;
+        return res;
     }
 }
 
@@ -670,7 +675,8 @@ void ProtoOut::write( std::vector<char> v, int tag )
 void ProtoDisplay::do_display()
 {
     while( input.good() ) {
-        display_Proto();
+        if(!display_Proto())
+        	break;
     }
 }
 
@@ -678,43 +684,43 @@ std::string ProtoDisplay::getNamebyType( char type )
 {
     switch( type ) {
         case ProtoBYTE:
-            return "BYTE";
+            return "BYTE: ";
         case ProtoDOUBLE:
-            return "DOUBLE";
+            return "DOUBLE: ";
         case ProtoFLOAT:
-            return "FLOAT";
+            return "FLOAT: ";
         case ProtoINT:
-            return "INT";
+            return "INT: ";
         case ProtoLIST:
-            return "LIST";
+            return "LIST: ";
         case ProtoLONG:
-            return "LONG";
+            return "LONG: ";
         case ProtoMAP:
-            return "MAP";
+            return "MAP: ";
         case ProtoSHORT:
-            return "SHORT";
+            return "SHORT: ";
         case ProtoSIMPLE_LIST:
-            return "SIMPLE_LIST";
+            return "SIMPLE_LIST: ";
         case ProtoSTRING1:
-            return "STRING1";
+            return "STRING1: ";
         case ProtoSTRING4:
-            return "STRING4";
+            return "STRING4: ";
         case ProtoSTRUCT_BEGIN:
-            return "STRUCT_BEGIN";
+            return "STRUCT_BEGIN: \n";
         case ProtoSTRUCT_END:
-            return "STRUCT_END";
+            return "STRUCT_END\n";
         case ProtoZERO_TAG:
-            return "ZERO_TAG";
+            return "ZERO_TAG: ";
     }
     return "UNKNOWN";
 }
 
-void ProtoDisplay::display_Proto()
+bool ProtoDisplay::display_Proto()
 {
     ProtoIn::ProtoHead head;
     input.peakHead( head );
     if( !input.good() ) {
-        return;
+        return false;
     }
     long a;
     float b;
@@ -753,10 +759,15 @@ void ProtoDisplay::display_Proto()
             display( f, std::to_string( head.tag ) + "," + getNamebyType( head.type ) );
             break;
         case ProtoSTRUCT_BEGIN:
-            input.skipToStructEnd();
-            output << std::to_string( head.tag ) << ",[STRUCT]" << std::endl;
+            //input.skipToStructEnd();
+            //output << std::to_string( head.tag ) << ",[STRUCT]" << std::endl;
+        	input.readHead();
+            displayStruct( std::to_string( head.tag ) + "," + getNamebyType( head.type ) );
             break;
         case ProtoSTRUCT_END:
+        	input.skipToStructEnd(); //stop read
+        	output << std::to_string( head.tag )+","+getNamebyType( head.type );
+        	return false;
             break;
         case ProtoSIMPLE_LIST:
             std::vector<char> v;
@@ -764,6 +775,7 @@ void ProtoDisplay::display_Proto()
             display( v, std::to_string( head.tag ) + "," + getNamebyType( head.type ) );
             break;
     }
+    return true;
 }
 
 void ProtoDisplay::display( bool b, std::string fieldName )
@@ -815,12 +827,22 @@ void ProtoDisplay::display( std::string s, std::string fieldName )
     }
 }
 
+void ProtoDisplay::displayStruct( std::string fieldName )
+{
+    wrap( fieldName );
+    ProtoDisplay nd( input.getStream() );
+    nd.isSimple = isSimple;
+    nd._level = _level + 1;
+    nd.do_display();
+    output << nd.output.str();
+}
+
 void ProtoDisplay::wrap( std::string fieldName )
 {
     for( int i = 0; i < _level; i++ ) {
         output << '\t';
     }
     if( fieldName != "" ) {
-        output << fieldName << ": ";
+        output << fieldName;
     }
 }
