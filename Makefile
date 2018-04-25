@@ -241,6 +241,9 @@ endif
 
 # Global settings for Windows targets (at end)
 ifeq ($(TARGETSYSTEM),WINDOWS)
+	JAVA_HOME:=$(JAVA_HOME)
+	CXXFLAGS += -I"$(JAVA_HOME)\include" -I"$(JAVA_HOME)\include\win32"
+    #LDFLAGS += -ljvm
     #LDFLAGS += -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lversion
     CORE_LIB := libOCSCore.dll
 endif
@@ -256,7 +259,7 @@ ifeq ($(TARGETSYSTEM), LINUX)
   endif
   JAVA_HOME:=$(shell echo $$(dirname $$(dirname $$(readlink -f $$(which javac)))))
   JVM_PATH:=$(shell dirname $$(find $(JAVA_HOME) -name "libjvm*"))
-  LDFLAGS += -L$(JVM_PATH) -ljvm
+  CXXFLAGS += -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
   EXTENSION =
   TARGET := $(TARGET)$(EXTENSION)
   CORE_LIB := libOCSCore.so
@@ -269,8 +272,8 @@ ifeq ($(TARGETSYSTEM), OSX)
   endif
   JAVA_HOME:=$(shell /usr/libexec/java_home)
   JVM_PATH:=$(shell dirname $$(find $(JAVA_HOME) -name "libjvm*"))
-  CXXFLAGS += -I/usr/local/opt/openssl/include
-  LDFLAGS += -L/usr/local/opt/openssl/lib -L$(JVM_PATH) -ljvm
+  CXXFLAGS += -I/usr/local/opt/openssl/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/darwin
+  LDFLAGS += -L/usr/local/opt/openssl/lib
   EXTENSION =
   TARGET := $(TARGET)$(EXTENSION)
   CORE_LIB := libOCSCore.dylib

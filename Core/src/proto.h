@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "export.h"
 
 #define ProtoBYTE 0
 #define ProtoDOUBLE 5
@@ -35,13 +36,13 @@ using is_map = std::is_same<T, std::map< typename T::key_type,
 class ProtoIn;
 class ProtoOut;
 class ProtoDisplay;
-struct ProtoStructBase {
+struct DLL_PUBLIC ProtoStructBase {
     protected:
         ProtoStructBase() {}
         ~ProtoStructBase() {}
 };
 
-class ProtoError : public std::runtime_error
+class DLL_PUBLIC ProtoError : public std::runtime_error
 {
     public:
         ProtoError( const std::string &msg );
@@ -50,7 +51,7 @@ class ProtoError : public std::runtime_error
         }
 };
 
-class ProtoIn
+class DLL_PUBLIC ProtoIn
 {
     public:
         struct ProtoHead {
@@ -169,7 +170,7 @@ class ProtoIn
         void skipField();
 };
 
-class ProtoOut
+class DLL_PUBLIC ProtoOut
 {
     private:
         std::ostream *stream;
@@ -225,7 +226,7 @@ class ProtoOut
         }
 };
 
-class ProtoDisplay
+class DLL_PUBLIC ProtoDisplay
 {
     private:
         ProtoIn input;
@@ -333,4 +334,3 @@ class ProtoDisplay
 };
 
 #endif
-

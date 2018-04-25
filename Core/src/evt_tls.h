@@ -10,17 +10,15 @@
 
 #ifndef EVT_TLS_H
 #define EVT_TLS_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/conf.h>
 #include <openssl/engine.h>
 #include "queue.h"
 #include "export.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct evt_tls_s evt_tls_t;
 
@@ -157,11 +155,11 @@ DLL_PUBLIC int evt_tls_write( evt_tls_t *c, void *msg, int str_len, evt_write_cb
 /*Perform a unwrapping of network received data, equivalent of `SSL_read` and
 `evt_read_cb is called on completion */
 DLL_PUBLIC int evt_tls_read( evt_tls_t *c, evt_read_cb on_read );
-/* equivalent of SSL_shutwdown, This performs Two-way SSL_dhutdown */
+/* equivalent of SSL_shutwdown, This performs Two-way SSL_shutdown */
 DLL_PUBLIC int evt_tls_close( evt_tls_t *c, evt_close_cb cls );
 
 /*XXX: should not be API, should be performed by evt_tls_close */
-int evt_tls_free( evt_tls_t *tls );
+DLL_PUBLIC int evt_tls_free( evt_tls_t *tls );
 
 
 /******************************************************************************

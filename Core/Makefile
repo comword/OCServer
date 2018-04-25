@@ -172,9 +172,6 @@ ifdef RELEASE
   endif
 endif
 
-$(BUILD_PREFIX)$(TARGET_NAME).ar: $(ODIR) $(OBJS)
-	$(AR) rcs $(BUILD_PREFIX)$(TARGET_NAME).ar $(OBJS)
-
 $(ODIR):
 	mkdir -p $(ODIR)
 
@@ -183,7 +180,8 @@ $(ODIR)/%.o: $(SRC_DIR)/%.cpp
 
 export ODIR _OBJS LDFLAGS CXX W32FLAGS DEFINES CXXFLAGS VERSION
 clean: clean-tests
-	rm -rf *$(TARGET_NAME).dll *$(TARGET_NAME).so *$(TARGET_NAME).dylib *$(TARGET_NAME).a *$(TARGET_NAME).ar
+	rm src/org_gtdev_oc_server_JNInterface.h
+	rm -rf *$(TARGET_NAME).dll *$(TARGET_NAME).so *$(TARGET_NAME).dylib *$(TARGET_NAME).a
 	rm -rf *obj
 astyle:
 	$(ASTYLE_BINARY) --options=.astylerc -n $(shell cat astyled_whitelist)
@@ -194,7 +192,7 @@ astyle-all: $(SOURCES) $(HEADERS)
 astyle-all-tests:
 	$(MAKE) -C tests astyle-all
 
-tests: $(BUILD_PREFIX)$(TARGET_NAME).ar
+tests:
 	$(MAKE) -C tests
 
 clean-tests:

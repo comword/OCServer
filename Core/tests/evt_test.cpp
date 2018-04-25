@@ -1,6 +1,7 @@
 #include "catch.hpp"
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 #include "evt_tls.h"
 #include "debug.h"
 
@@ -15,114 +16,119 @@ struct test_tls_s {
 //Needed for pretty printing
 const char *role[2] = {
     "Client"
-   ,"Server"
+    , "Server"
 };
 
 struct my_data {
-    char data[16*1024];
+    char data[16 * 1024];
     int sz;
     int stalled;
-}test_data;
+} test_data;
 
 
-int test_tls_init(evt_ctx_t *ctx, test_tls_t *tst_tls)
+int test_tls_init( evt_ctx_t *ctx, test_tls_t *tst_tls )
 {
-    memset( tst_tls, 0, sizeof *tst_tls);
-    evt_tls_t *t = evt_ctx_get_tls(ctx);
-    assert(t != NULL);
+    memset( tst_tls, 0, sizeof * tst_tls );
+    evt_tls_t *t = evt_ctx_get_tls( ctx );
+    assert( t != NULL );
     //Now user data in evt_tls_t is test_tls_t
     t->data = tst_tls;
     tst_tls->endpt = t;
     return 0;
 }
 
-void cls(evt_tls_t *evt, int status)
+void cls( evt_tls_t *evt, int status )
 {
-	DebugLog(D_INFO,D_CRYPT)<<"["<<role[evt_tls_get_role(evt)]<<"]: on_close_cb called. status: "<<status;
-    evt_tls_free(evt);
+    DebugLog( D_INFO, D_CRYPT ) << "[" << role[evt_tls_get_role( evt )] <<
+                                "]: on_close_cb called. status: " << status;
+    evt_tls_free( evt );
 }
 
-int test_tls_close(test_tls_t *t, evt_close_cb cls)
+int test_tls_close( test_tls_t *t, evt_close_cb cls )
 {
     int rv = 0;
-    rv = evt_tls_close(t->endpt, cls);
+    rv = evt_tls_close( t->endpt, cls );
     t->is_closing = 1;
     return rv;
 }
 
-void on_client_rd( evt_tls_t *tls, char *buf, int sz)
+void on_client_rd( evt_tls_t *tls, char *buf, int sz )
 {
-	DebugLog(D_INFO,D_CRYPT)<<"["<<role[evt_tls_get_role(tls)]<<"]: on_client_rd called. size: "<<sz;
-	DebugLog(D_INFO,D_CRYPT)<<buf;
-    test_tls_close((test_tls_t *)tls->data, cls);
+    DebugLog( D_INFO, D_CRYPT ) << "[" << role[evt_tls_get_role( tls )] <<
+                                "]: on_client_rd called. size: " << sz;
+    DebugLog( D_INFO, D_CRYPT ) << buf;
+    test_tls_close( ( test_tls_t * )tls->data, cls );
 
 }
 
-void on_write(evt_tls_t *tls, int status)
+void on_write( evt_tls_t *tls, int status )
 {
-    assert(status > 0);
-    DebugLog(D_INFO,D_CRYPT)<<"["<<role[evt_tls_get_role(tls)]<<"]: On_write called.";
-    evt_tls_read( tls, on_client_rd);
+    assert( status > 0 );
+    DebugLog( D_INFO, D_CRYPT ) << "[" << role[evt_tls_get_role( tls )] << "]: On_write called.";
+    evt_tls_read( tls, on_client_rd );
 }
 
-void on_server_wr(evt_tls_t *tls, int status)
+void on_server_wr( evt_tls_t *tls, int status )
 {
-    assert(status > 0);
-    DebugLog(D_INFO,D_CRYPT)<<"["<<role[evt_tls_get_role(tls)]<<"]: on_server_wr called.";
-    test_tls_close((test_tls_t *)tls->data, cls);
+    assert( status > 0 );
+    DebugLog( D_INFO, D_CRYPT ) << "[" << role[evt_tls_get_role( tls )] << "]: on_server_wr called.";
+    test_tls_close( ( test_tls_t * )tls->data, cls );
 }
 
-void on_server_rd( evt_tls_t *tls, char *buf, int sz)
+void on_server_rd( evt_tls_t *tls, char *buf, int sz )
 {
-    test_tls_t *test_tls = (test_tls_t*)tls->data;
-    if ( sz <= 0 ) {
-        test_tls_close(test_tls, cls);
+    test_tls_t *test_tls = ( test_tls_t * )tls->data;
+    if( sz <= 0 ) {
+        test_tls_close( test_tls, cls );
         return;
     }
-    DebugLog(D_INFO,D_CRYPT)<<"["<<role[evt_tls_get_role(tls)]<<"]: on_server_rd called.";
-    DebugLog(D_INFO,D_CRYPT)<<buf;
-    evt_tls_write(tls, buf, sz, on_server_wr);
+    DebugLog( D_INFO, D_CRYPT ) << "[" << role[evt_tls_get_role( tls )] << "]: on_server_rd called.";
+    DebugLog( D_INFO, D_CRYPT ) << buf;
+    evt_tls_write( tls, buf, sz, on_server_wr );
 }
 
 
-void on_connect(evt_tls_t *tls, int status)
+void on_connect( evt_tls_t *tls, int status )
 {
     int r = 0;
-    DebugLog(D_INFO,D_CRYPT)<<"["<<role[evt_tls_get_role(tls)]<<"]: On_connect called.";
-    if ( status ) {
-	char msg[] = "Hello from event based tls engine\n";
-	int str_len = sizeof(msg);
-	r =  evt_tls_write(tls, msg, str_len, on_write);
-        assert( r = str_len);
-    }
-    else { //handle ssl_shutdown
-        test_tls_close((test_tls_t*)tls->data, cls);
+    DebugLog( D_INFO, D_CRYPT ) << "[" << role[evt_tls_get_role( tls )] << "]: On_connect called.";
+    if( status ) {
+        char msg[] = "Hello from event based tls engine\n";
+        int str_len = sizeof( msg );
+        r =  evt_tls_write( tls, msg, str_len, on_write );
+        assert( r = str_len );
+    } else { //handle ssl_shutdown
+        test_tls_close( ( test_tls_t * )tls->data, cls );
     }
 }
 
 //test net writer for the test code
-int test_net_wrtr(evt_tls_t *c, void *buf, int sz)
+int test_net_wrtr( evt_tls_t *c, void *buf, int sz )
 {
-	(void)c;
+    ( void )c;
     static int first_time = 1;
-    if ((test_data.stalled) || (first_time == 1)) {
+    if( ( test_data.stalled ) || ( first_time == 1 ) ) {
         first_time = 0;
-        memset(&test_data, 0, sizeof(test_data));
-        memcpy(test_data.data, buf, sz);
+        memset( &test_data, 0, sizeof( test_data ) );
+        memcpy( test_data.data, buf, sz );
         test_data.sz = sz;
         test_data.stalled = 0;
     }
     return 0;
 }
 
-int start_nio(test_tls_t *source, test_tls_t *destination)
+int start_nio( test_tls_t *source, test_tls_t *destination )
 {
-    for(;;) {
-        if ( test_data.stalled ) break;
+    for( ;; ) {
+        if( test_data.stalled ) {
+            break;
+        }
         //don't write to closed handle
-        if ( destination->is_closing ) break;
+        if( destination->is_closing ) {
+            break;
+        }
         test_data.stalled = 1;
-        evt_tls_feed_data(destination->endpt, test_data.data, test_data.sz);
+        evt_tls_feed_data( destination->endpt, test_data.data, test_data.sz );
         test_tls_t *tmp = destination;
         destination = source;
         source = tmp;
@@ -131,58 +137,57 @@ int start_nio(test_tls_t *source, test_tls_t *destination)
     return 0;
 }
 
-int test_tls_connect(test_tls_t *t, evt_handshake_cb on_connect)
+int test_tls_connect( test_tls_t *t, evt_handshake_cb on_connect )
 {
-    return evt_tls_connect(t->endpt, on_connect);
+    return evt_tls_connect( t->endpt, on_connect );
 }
 
-void on_accept(evt_tls_t *svc, int status)
+void on_accept( evt_tls_t *svc, int status )
 {
-    DebugLog(D_INFO,D_CRYPT)<<"["<<role[evt_tls_get_role(svc)]<<"]: On_accept called";
+    DebugLog( D_INFO, D_CRYPT ) << "[" << role[evt_tls_get_role( svc )] << "]: On_accept called";
     //read data now
-    if ( status > 0 ) {
-        evt_tls_read(svc, on_server_rd );
-    }
-    else {
-        test_tls_close((test_tls_t*)svc->data, cls);
+    if( status > 0 ) {
+        evt_tls_read( svc, on_server_rd );
+    } else {
+        test_tls_close( ( test_tls_t * )svc->data, cls );
     }
 }
 
-int test_tls_accept(test_tls_t *tls, evt_handshake_cb on_accept)
+int test_tls_accept( test_tls_t *tls, evt_handshake_cb on_accept )
 {
-    return evt_tls_accept(tls->endpt, on_accept);
+    return evt_tls_accept( tls->endpt, on_accept );
 }
 
 TEST_CASE( "EVT_TLS Test" )
 {
-	evt_ctx_t tls;
-	memset(&tls, 0, sizeof(tls));
-	assert(0 == evt_ctx_init(&tls));
+    evt_ctx_t tls;
+    memset( &tls, 0, sizeof( tls ) );
+    assert( 0 == evt_ctx_init( &tls ) );
 
-	assert(0 == evt_ctx_is_crtf_set(&tls));
-	assert(0 == evt_ctx_is_key_set(&tls));
+    assert( 0 == evt_ctx_is_crtf_set( &tls ) );
+    assert( 0 == evt_ctx_is_key_set( &tls ) );
 
-	if (!evt_ctx_is_crtf_set(&tls)) {
-		evt_ctx_set_crt_key(&tls, "server-cert.crt", "server-key.key");
-	}
+    if( !evt_ctx_is_crtf_set( &tls ) ) {
+        evt_ctx_set_crt_key( &tls, "server-cert.crt", "server-key.key" );
+    }
 
-	assert( 1 == evt_ctx_is_crtf_set(&tls));
-	assert( 1 == evt_ctx_is_key_set(&tls));
+    assert( 1 == evt_ctx_is_crtf_set( &tls ) );
+    assert( 1 == evt_ctx_is_key_set( &tls ) );
 
-	assert(tls.writer == NULL);
-	evt_ctx_set_writer(&tls, test_net_wrtr);
-	assert(tls.writer != NULL);
+    assert( tls.writer == NULL );
+    evt_ctx_set_writer( &tls, test_net_wrtr );
+    assert( tls.writer != NULL );
 
-	test_tls_t clnt_hdl;
-	test_tls_init( &tls, &clnt_hdl);
+    test_tls_t clnt_hdl;
+    test_tls_init( &tls, &clnt_hdl );
 
-	test_tls_t svc_hdl;
-	test_tls_init( &tls, &svc_hdl);
+    test_tls_t svc_hdl;
+    test_tls_init( &tls, &svc_hdl );
 
-	test_tls_connect(&clnt_hdl, on_connect);
-	test_tls_accept(&svc_hdl, on_accept);
+    test_tls_connect( &clnt_hdl, on_connect );
+    test_tls_accept( &svc_hdl, on_accept );
 
-	start_nio(&clnt_hdl, &svc_hdl);
+    start_nio( &clnt_hdl, &svc_hdl );
 
-	evt_ctx_free(&tls);
+    evt_ctx_free( &tls );
 }

@@ -1,7 +1,8 @@
 #include <string>
 #include <vector>
+#include "export.h"
 
-class util
+class DLL_PUBLIC util
 {
     public:
         static void int8_to_buf( char *buf, int i, int value );

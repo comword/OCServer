@@ -43,6 +43,7 @@ visualcpp/x64
 *.lai
 *.la
 *.a
+*.ar
 *.lib
 
 # Executables

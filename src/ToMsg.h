@@ -19,7 +19,7 @@ class ToMsg
         std::string serviceCmd;
         int packSeq = -1;
         std::string uin;
-        uv_buf_t netBuffer;
+        std::string netBuffer;
         long Timeout;
     public:
         ToMsg( size_t bufsize );

@@ -1,12 +1,11 @@
 #include "FromMsg.h"
-
-FromMsg::FromMsg( size_t bufsize )
+void FromMsg::ParsePacket( const NetPacket &packethead, const char *packetdata )
 {
-    netBuffer.base = ( char * )malloc( bufsize );
-    netBuffer.len = bufsize;
-}
-
-FromMsg::~FromMsg()
-{
-    free( netBuffer.base );
+    fromVersion = packethead.version;
+    packet_type = packethead.type;
+    if( packet_type == 1 ) {
+        serviceCmd = "SRV_LOGIN";
+    }
+    uin = packethead.uid;
+    netBuffer = std::string( packetdata, packethead.datalen );
 }

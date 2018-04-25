@@ -675,8 +675,9 @@ void ProtoOut::write( std::vector<char> v, int tag )
 void ProtoDisplay::do_display()
 {
     while( input.good() ) {
-        if(!display_Proto())
-        	break;
+        if( !display_Proto() ) {
+            break;
+        }
     }
 }
 
@@ -722,6 +723,9 @@ bool ProtoDisplay::display_Proto()
     if( !input.good() ) {
         return false;
     }
+    char by;
+    short s;
+    int i;
     long a;
     float b;
     double c;
@@ -731,8 +735,17 @@ bool ProtoDisplay::display_Proto()
     switch( head.type ) {
         case ProtoZERO_TAG:
         case ProtoBYTE:
+            input.read( by );
+            display( ( short )by, std::to_string( head.tag ) + "," + getNamebyType( head.type ) );
+            break;
         case ProtoSHORT:
+            input.read( s );
+            display( s, std::to_string( head.tag ) + "," + getNamebyType( head.type ) );
+            break;
         case ProtoINT:
+            input.read( i );
+            display( i, std::to_string( head.tag ) + "," + getNamebyType( head.type ) );
+            break;
         case ProtoLONG:
             input.read( a );
             display( a, std::to_string( head.tag ) + "," + getNamebyType( head.type ) );
@@ -761,13 +774,13 @@ bool ProtoDisplay::display_Proto()
         case ProtoSTRUCT_BEGIN:
             //input.skipToStructEnd();
             //output << std::to_string( head.tag ) << ",[STRUCT]" << std::endl;
-        	input.readHead();
+            input.readHead();
             displayStruct( std::to_string( head.tag ) + "," + getNamebyType( head.type ) );
             break;
         case ProtoSTRUCT_END:
-        	input.skipToStructEnd(); //stop read
-        	output << std::to_string( head.tag )+","+getNamebyType( head.type );
-        	return false;
+            input.skipToStructEnd(); //stop read
+            output << std::to_string( head.tag ) + "," + getNamebyType( head.type );
+            return false;
             break;
         case ProtoSIMPLE_LIST:
             std::vector<char> v;

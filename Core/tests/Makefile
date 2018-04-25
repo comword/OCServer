@@ -4,13 +4,11 @@ OBJS = $(SOURCES:%.cpp=$(ODIR)/%.o)
 ASTYLE_BINARY = astyle
 STRIP = $(CROSS)strip
 
-MAIN_LIB=../$(BUILD_PREFIX)libOCSCore.ar
-
 # If you invoke this makefile directly and the parent directory was
 # built with BUILD_PREFIX set, you must set it for this invocation as well.
 ODIR ?= obj
 
-LDFLAGS += -L.
+LDFLAGS += -L..
 
 CXXFLAGS += -I../src -Wno-unused-variable -Wno-sign-compare -Wno-unknown-pragmas -Wno-parentheses
 
@@ -18,8 +16,8 @@ TEST_TARGET = $(BUILD_PREFIX)OCServer_test
 
 tests: $(TEST_TARGET)
 
-$(BUILD_PREFIX)OCServer_test: $(ODIR) $(OBJS) $(MAIN_LIB)
-	+$(CXX) $(W32FLAGS) -o $@ $(DEFINES) $(OBJS) $(MAIN_LIB) $(CXXFLAGS) $(LDFLAGS)
+$(BUILD_PREFIX)OCServer_test: $(ODIR) $(OBJS)
+	+$(CXX) $(W32FLAGS) -o $@ $(DEFINES) $(OBJS) $(CXXFLAGS) $(LDFLAGS) -lOCSCore
 ifdef RELEASE
   ifndef DEBUG_SYMBOLS
 	$(STRIP) $(TEST_TARGET)

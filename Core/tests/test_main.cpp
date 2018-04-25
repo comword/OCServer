@@ -19,8 +19,8 @@ int main( int argc, const char *argv[] )
     PATH_CLASS::init_user_dir( "" );
     PATH_CLASS::update_datadir();
     //setupDebug( "test.log" );
-    limitDebugLevel(D_ALL);
-    limitDebugClass(DC_ALL);
+    limitDebugLevel( D_ALL );
+    limitDebugClass( DC_ALL );
     DebugLog( D_INFO, D_MAIN ) << "Version: " << VERSION;
     conf = new Configure( PATH_CLASS::FILENAMES["userdir"] + "config.json" );
     result = session.run();

@@ -1,7 +1,7 @@
 #include "mfilesystem.h"
 #include "debug.h"
 #include "uv_net.h"
-#include "javabr.h"
+#include "jImpl.h"
 #include "config.h"
 
 #include <functional>
@@ -21,7 +21,6 @@
 
 bool if_exit = false;
 uvnet *net;
-javabr *jbr;
 void exit_handler( int s );
 
 namespace
@@ -186,13 +185,11 @@ int main( int argc, char *argv[] )
     sigHandler.sa_flags = 0;
     sigaction( SIGINT, &sigHandler, NULL );
 #endif
-    if( setlocale( LC_ALL, "" ) == NULL ) {
-        DebugLog( D_WARNING, D_MAIN ) << "main.cpp:setlocale(LC_ALL, '') == NULL.\n";
-    }
     //net = new uvnet("0.0.0.0",9001,false);
+    DebugLog( D_INFO, D_MAIN ) << "Version: " << VERSION;
     std::string udir = PATH_CLASS::FILENAMES["userdir"];
     conf = new Configure( udir + "config.json" );
-    jbr = new javabr();
+
     net = new uvnet();
     std::string cert = conf->js["server_cert"];
     std::string key = conf->js["server_key"];
@@ -206,7 +203,6 @@ int main( int argc, char *argv[] )
         sleep( 1 );
     }
     delete net;
-    delete jbr;
     delete conf;
     deinitDebug();
 }

@@ -5,25 +5,22 @@
 #include <string.h>
 #include <limits.h>
 
-struct TestUserInfo : public ProtoStructBase
-{
-public:
-	void writeTo(ProtoOut& _os) const
-	{
-		_os.write(uin, 1);
-		_os.write(nick, 2);
-		_os.write(birthday, 3);
-	}
-	void readFrom(ProtoIn& _is)
-	{
-		_is.read(uin);
-		_is.read(nick);
-		_is.read(birthday);
-	}
-public:
-	int uin;
-	std::string nick;
-	std::vector<char> birthday;
+struct TestUserInfo : public ProtoStructBase {
+    public:
+        void writeTo( ProtoOut &_os ) const {
+            _os.write( uin, 1 );
+            _os.write( nick, 2 );
+            _os.write( birthday, 3 );
+        }
+        void readFrom( ProtoIn &_is ) {
+            _is.read( uin );
+            _is.read( nick );
+            _is.read( birthday );
+        }
+    public:
+        int uin;
+        std::string nick;
+        std::vector<char> birthday;
 };
 /*
   100120ff31010041010151ff7f61ff7e7200010000820001000192ffff7fffa2ffff7ffeb300-
@@ -38,10 +35,10 @@ public:
  */
 std::stringstream test_data()
 {
-	TestUserInfo tui;
-	tui.uin = 12345678;
-	tui.nick = "HelloWorld";
-	tui.birthday = {0x07,0x7d,0x02,0x0d};
+    TestUserInfo tui;
+    tui.uin = 12345678;
+    tui.nick = "HelloWorld";
+    tui.birthday = {0x07, 0x7d, 0x02, 0x0d};
     std::stringstream res;
     ProtoOut jout( res );
     std::map<std::string, std::string> m_map;
@@ -78,7 +75,7 @@ std::stringstream test_data()
         intBuffer.push_back( i );
     }
     jout.write( intBuffer, 22 );
-    jout.write( tui , 23 );
+    jout.write( tui, 23 );
     jout.write( std::string( "END" ), 24 );
     return res;
 }
@@ -88,8 +85,8 @@ TEST_CASE( "ProtoOut r/w full test" )
     std::stringstream res = test_data();
     std::string dat = res.str();
     std::string dathex;
-    util::Buffer2String(dat, dathex);
-    WARN(dathex);
+    util::Buffer2String( dat, dathex );
+    WARN( dathex );
     ProtoIn jin( res );
     int a;
     jin.read( a ); //1
@@ -142,12 +139,12 @@ TEST_CASE( "ProtoOut r/w full test" )
     CHECK( r_intBuffer[1] == USHRT_MAX + 1 );
     TestUserInfo otui;
     jin.read( otui ); //23
-    CHECK(otui.uin == 12345678);
-	CHECK(otui.nick == "HelloWorld");
-	std::vector<char> corr = {0x07,0x7d,0x02,0x0d};
-	CHECK(otui.birthday == corr);
-	jin.read( e ); //24
-	CHECK(e == "END");
+    CHECK( otui.uin == 12345678 );
+    CHECK( otui.nick == "HelloWorld" );
+    std::vector<char> corr = {0x07, 0x7d, 0x02, 0x0d};
+    CHECK( otui.birthday == corr );
+    jin.read( e ); //24
+    CHECK( e == "END" );
 }
 TEST_CASE( "ProtoDisplay test" )
 {

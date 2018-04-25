@@ -1,5 +1,7 @@
 #include "debug.h"
 #include "uv_net.h"
+#include "util.h"
+#include "FromMsg.h"
 
 #include <assert.h>
 #include <chrono>
@@ -19,10 +21,11 @@ uvnet::uvnet()
         DebugLog( D_ERROR, D_NETWORK ) << "evt_ctx_init error: " + std::to_string(
                                            err ) + " (" + ERR_error_string( err, NULL ) + ")";
     }
-    //    iret = uv_mutex_init( &mutex_cl );
-    //    if( iret ) {
-    //        DebugLog( D_ERROR, D_NETWORK ) << GetUVError( iret );
-    //    }
+    evt_ctx_set_nio( &tls_ctx, NULL, uv_tls_writer );
+    iret = uv_mutex_init( &mutex_cl );
+    if( iret ) {
+        DebugLog( D_ERROR, D_NETWORK ) << GetUVError( iret );
+    }
 }
 
 uvnet::uvnet( std::string bindaddr, int port, bool netProtocol ) //t,udp;f,tcp
@@ -38,9 +41,8 @@ uvnet::uvnet( std::string bindaddr, int port, bool netProtocol ) //t,udp;f,tcp
 uvnet::~uvnet()
 {
     uv_loop_close( &mloop );
-    //uv_stop( mloop );
     uv_thread_join( &HW_start_thread );
-    //uv_mutex_destroy( &mutex_cl );
+    uv_mutex_destroy( &mutex_cl );
     for( auto it = client_list.begin(); it != client_list.end(); ++it ) {
         FreeTcpClientCtx( *it );
     }
@@ -49,6 +51,7 @@ uvnet::~uvnet()
         FreeWriteParam( *it );
     }
     writeparam_list.clear();
+    evt_ctx_free( &tls_ctx );
 }
 
 bool uvnet::SetNoDelay( bool enable )
@@ -100,6 +103,15 @@ void uvnet::bind_net()
     }
 }
 
+int uvnet::uv_tls_writer( evt_tls_t *t, void *bfr, int sz )
+{
+    ClientConnS *theclass = static_cast<ClientConnS *>( t->data );
+    assert( theclass );
+    uvnet *parent = static_cast<uvnet *>( theclass->parent_server );
+    assert( parent );
+    return parent->sendinl( std::string( ( char * )bfr, sz ), theclass );
+}
+
 void uvnet::on_new_connection( uv_stream_t *server, int status )
 {
     uvnet *thisStream = static_cast<uvnet *>( server->data );
@@ -115,7 +127,6 @@ void uvnet::on_new_connection( uv_stream_t *server, int status )
     } else {
         client_tcp = thisStream->client_list.front();
         thisStream->client_list.pop_front();
-        //client_tcp->parent_acceptclient = nullptr;
     }
     int iret = uv_tcp_init( &thisStream->mloop, &client_tcp->tcphandle );
     if( iret ) {
@@ -134,33 +145,74 @@ void uvnet::on_new_connection( uv_stream_t *server, int status )
         //thisStream->client_list.push_back( client_tcp ); //Recycle
         uv_close( ( uv_handle_t * ) &client_tcp->tcphandle, RecycleTcpHandle );
         thisStream->lasterrmsg = GetUVError( iret );
-        DebugLog( D_WARNING, D_NETWORK ) << thisStream->lasterrmsg;
+        DebugLog( D_INFO, D_NETWORK ) << "" << thisStream->lasterrmsg;
         return;
     }
     client_tcp->packet->SetPacketCB( GetPacket, client_tcp );
-    //  client_tcp->packet->Start(tcpsock->packet_head, tcpsock->packet_tail);
-    //    if( uv_tls_init() < 0 ) {
-    //        uv_close( ( uv_handle_t * )&client_tcp->tcphandle, RecycleTcpHandle );
-    //        thisStream->lasterrmsg = GetUVError( iret );
-    //        DebugLog( D_WARNING, D_NETWORK ) << thisStream->lasterrmsg;
-    //        return;
-    //    }
-    //    iret = uv_read_start( ( uv_stream_t * )&client_tcp->tcphandle, alloc_buffer, read_header );
-    //    if( iret ) {
-    //        uv_close( ( uv_handle_t * )&client_tcp->tcphandle, RecycleTcpHandle );
-    //        thisStream->lasterrmsg = GetUVError( iret );
-    //        DebugLog( D_WARNING, D_NETWORK ) << thisStream->lasterrmsg;
-    //        return;
-    //    }
-    //    ClientData *cdata = new ClientData( client_tcp, clientid ); //delete on SubClientClosed
-    //    client_tcp->parent_acceptclient = cdata;
-    //    cdata->SetClosedCB( uvnet::SubClientClosed, thisStream );
-    //    uv_mutex_lock( &thisStream->mutex_cl );
-    //    thisStream->client_map.insert( std::make_pair( clientid, cdata ) ); //add accept client
-    //    uv_mutex_unlock( &thisStream->mutex_cl );
-    DebugLog( D_INFO, D_NETWORK ) << "New connection, status: " << status << ". new client id=" <<
-                                  clientid;
+    if( client_tcp->need_tls ) {
+        evt_tls_accept( client_tcp->tls, on_hd_complete );
+    }
+    iret = uv_read_start( ( uv_stream_t * )&client_tcp->tcphandle, alloc_buffer, read_header );
+    if( iret ) {
+        uv_close( ( uv_handle_t * )&client_tcp->tcphandle, RecycleTcpHandle );
+        DebugLog( D_INFO, D_NETWORK ) << "uv_read_start failed." << GetUVError( iret );
+        return;
+    }
+    uv_mutex_lock( &thisStream->mutex_cl );
+    thisStream->client_map.insert( std::make_pair( clientid, client_tcp ) ); //add accept client
+    uv_mutex_unlock( &thisStream->mutex_cl );
+    DebugLog( D_INFO, D_NETWORK ) << "New connection, status: " << status << ". new client.";
     return;
+}
+
+size_t uvnet::GetAvailaClientID() const
+{
+    static int s_id = 0;
+    return ++s_id;
+}
+
+void uvnet::uv_rd_cb( ClientConnS *strm, ssize_t nrd, const uv_buf_t *bfr )
+{
+    if( nrd <= 0 ) {
+        return;
+    }
+    std::string tmp;
+    util::Buffer2String( bfr->base, nrd, tmp );
+    DebugLog( D_INFO, D_NETWORK ) << "Receive: " << tmp;
+    strm->packet->recvdata( ( const unsigned char * )bfr->base, nrd );
+    //uv_tls_write(strm, (uv_buf_t*)bfr);
+}
+
+int uvnet::uv_tls_write( ClientConnS *stream, uv_buf_t *buf )
+{
+    assert( stream != NULL );
+    evt_tls_t *evt = stream->tls;
+    assert( evt != NULL );
+    return evt_tls_write( evt, buf->base, buf->len, on_evt_write );
+}
+
+void uvnet::on_evt_write( evt_tls_t *tls, int status )
+{
+    assert( tls != NULL );
+    ClientConnS *ut = static_cast<ClientConnS *>( tls->data );
+    assert( ut != NULL );
+    if( ut->tls_wr_cb != NULL ) {
+        ut->tls_wr_cb( ut, status );
+    }
+}
+
+void uvnet::on_hd_complete( evt_tls_t *t, int status )
+{
+    ClientConnS *ut = static_cast<ClientConnS *>( t->data );
+    assert( ut != NULL );
+    if( status == 1 ) {
+        ut->tls_rd_cb = uv_rd_cb;
+        evt_tls_read( ut->tls, evt_on_rd );
+    } else {
+        DebugLog( D_INFO, D_NETWORK ) << "TLS handshake status " << status << ". Closing.";
+        ut->Close();
+    }
+    //uv_tls_close(ut, (uv_tls_close_cb)free);
 }
 
 void uvnet::alloc_buffer( uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf )
@@ -193,32 +245,41 @@ void uvnet::RecycleTcpHandle( uv_handle_t *handle )
 
 void uvnet::SubClientClosed( ClientConnS *client, void *userdata )
 {
-    //uvnet *theclass = static_cast<uvnet *>( userdata );
-    DebugLog( D_INFO, D_NETWORK ) << "delete client:" << client->clientid;
-    FreeTcpClientCtx( client );
-    //    uvnet *theclass = static_cast<uvnet *>( userdata );
-    //    uv_mutex_lock( &theclass->mutex_cl );
-    //    auto itfind = theclass->client_map.find( clientid );
-    //    if( itfind != theclass->client_map.end() ) {
-    //        //if (theclass->closedcb) {
-    //        //    theclass->closedcb(clientid, theclass->closedcb_userdata);
-    //        //}
-    //        if( theclass->client_list.size() > theclass->backlog ) {
-    //            FreeTcpClientCtx( itfind->second->GetTcpHandle() );
-    //        } else {
-    //            theclass->client_list.push_back( itfind->second->GetTcpHandle() );
-    //        }
-    //        delete itfind->second;
-    //        DebugLog( D_INFO, D_NETWORK ) << "delete client:" << itfind->first;
-    //        theclass->client_map.erase( itfind );
-    //    }
-    //    uv_mutex_unlock( &theclass->mutex_cl );
+    uvnet *theclass = static_cast<uvnet *>( userdata );
+    DebugLog( D_INFO, D_NETWORK ) << "delete client.";
+    //FreeTcpClientCtx( client );
+    uv_mutex_lock( &theclass->mutex_cl );
+    auto itfind = theclass->client_map.find( client->clientid );
+    if( itfind != theclass->client_map.end() ) {
+        if( theclass->client_list.size() > theclass->backlog ) {
+            FreeTcpClientCtx( client );
+        } else {
+            theclass->client_list.push_back( client );
+        }
+        delete itfind->second;
+        DebugLog( D_INFO, D_NETWORK ) << "delete client:" << itfind->first;
+        theclass->client_map.erase( itfind );
+    }
+    uv_mutex_unlock( &theclass->mutex_cl );
 }
 
-size_t uvnet::GetAvailaClientID() const
+//size_t uvnet::GetAvailaClientID() const
+//{
+//    static size_t s_id = 0;
+//    return ++s_id;
+//}
+
+void uvnet::evt_on_rd( evt_tls_t *t, char *bfr, int sz )
 {
-    static size_t s_id = 0;
-    return ++s_id;
+    uv_buf_t data;
+    ClientConnS *theclass = static_cast<ClientConnS *>( t->data );
+    assert( theclass );
+    data.base = bfr;
+    data.len = sz;
+
+    assert( theclass->tls_rd_cb != NULL );
+    DebugLog( D_INFO, D_NETWORK ) << "tls_rd_cb " << sz;
+    theclass->tls_rd_cb( theclass, sz, &data );
 }
 
 void uvnet::read_header( uv_stream_t *client, ssize_t nread, const uv_buf_t *buf )
@@ -227,21 +288,23 @@ void uvnet::read_header( uv_stream_t *client, ssize_t nread, const uv_buf_t *buf
     assert( theclass );
     if( nread < 0 ) { /* Error or EOF */
         if( nread == UV_EOF ) {
-            DebugLog( D_INFO, D_NETWORK ) << "client(" << theclass->clientid << ")eof";
+            DebugLog( D_INFO, D_NETWORK ) << "client eof: " << theclass->clientid;
         } else if( nread == UV_ECONNRESET ) {
-            DebugLog( D_INFO, D_NETWORK ) << "client(" << theclass->clientid << ")conn reset";
+            DebugLog( D_INFO, D_NETWORK ) << "client connection reset: " << theclass->clientid;
         } else {
-            DebugLog( D_WARNING, D_NETWORK ) << "client(" << theclass->clientid << ")：" << GetUVError(
+            DebugLog( D_WARNING, D_NETWORK ) << "client: " << theclass->clientid << " " << GetUVError(
                                                  nread );
         }
-        //ClientData *acceptclient = ( ClientData * )theclass->parent_acceptclient;
-        //acceptclient->Close();
         theclass->Close();
         return;
     } else if( 0 == nread )  { /* Everything OK, but nothing read. */
 
     } else {
-        theclass->packet->recvdata( ( const unsigned char * )buf->base, nread );
+        if( theclass->need_tls ) {
+            evt_tls_feed_data( theclass->tls, buf->base, nread );
+        } else {
+            theclass->packet->recvdata( ( const unsigned char * )buf->base, nread );
+        }
     }
 
     if( buf->base ) {
@@ -268,7 +331,7 @@ char uvnet::getNetAddrType( std::string saddr )
 
 bool uvnet::run_loop()
 {
-    DebugLog( D_INFO, D_NETWORK ) << "Server is starting...";
+    DebugLog( D_INFO, D_NETWORK ) << "Server is started.";
     int iret = uv_run( &mloop, UV_RUN_DEFAULT );
     if( iret ) {
         lasterrmsg = GetUVError( iret );
@@ -299,7 +362,7 @@ std::string uvnet::getTLSError( size_t errcode )
 
 bool uvnet::Start()
 {
-    //return uv_run( mloop, UV_RUN_DEFAULT );
+    assert( this->protocol != nullptr ); //the protocol must be set.
     int iret = uv_thread_create( &HW_start_thread, StartThread,
                                  this ); //use thread to wait for start succeed.
     if( iret ) {
@@ -310,27 +373,89 @@ bool uvnet::Start()
     return true;
 }
 
-void uvnet::GetPacket( const NetPacket &packethead, const unsigned char *packetdata,
+void uvnet::GetPacket( const NetPacket &packethead, const char *packetdata,
                        void *userdata )
 {
     DebugLog( D_INFO, D_NETWORK ) << "Get packet type " << std::to_string( packethead.type );
-    //fprintf(stdout, "Get packet type %d\n", packethead.type);
     assert( userdata );
     ClientConnS *theclass = ( ClientConnS * )userdata;
-    //uvnet* parent = (uvnet*)theclass->parent_server;
-    DebugLog( D_INFO, D_NETWORK ) << packetdata;
-    //const std::string& senddata = parent->protocol_->ParsePacket(packethead, packetdata);
-    //parent->sendinl(senddata, theclass);
-    return;
+    uvnet *parent = ( uvnet * )theclass->parent_server;
+    std::string tmp;
+    util::Buffer2String( ( char * )packetdata, packethead.datalen, tmp );
+    DebugLog( D_INFO, D_NETWORK ) << tmp;
+    assert( parent->protocol != nullptr );
+    const std::string &senddata = parent->protocol->ParsePacket( packethead, packetdata );
+    if( !senddata.empty() ) {
+        parent->sendinl( senddata, theclass );
+    }
+}
+
+void uvnet::SetProtocol( TCPServerProtocolProcess *pro )
+{
+    this->protocol = pro;
+}
+
+bool uvnet::sendinl( const std::string &senddata, ClientConnS *client )
+{
+    if( senddata.empty() ) {
+        DebugLog( D_INFO, D_NETWORK ) << "send empty data.";
+        return true;
+    }
+    write_param *writep = NULL;
+    if( writeparam_list.empty() ) {
+        writep = AllocWriteParam( 10240 );
+    } else {
+        writep = writeparam_list.front();
+        writeparam_list.pop_front();
+    }
+    if( writep->buf.len < senddata.length() ) {
+        writep->buf.base = ( char * )realloc( writep->buf.base, senddata.length() );
+        writep->buf.len = senddata.length();
+    }
+    memcpy( writep->buf.base, senddata.data(), senddata.length() );
+    writep->buf.len = senddata.length();
+    writep->write_req.data = client;
+    int iret = uv_write( ( uv_write_t * )&writep->write_req, ( uv_stream_t * )&client->tcphandle,
+                         &writep->buf, 1, AfterSend );
+    if( iret ) {
+        writeparam_list.push_back( writep );
+        DebugLog( D_INFO, D_NETWORK ) << "client(" << client << ") send error:" << GetUVError( iret );
+        return false;
+    }
+    return true;
+}
+
+void uvnet::AfterSend( uv_write_t *req, int status )
+{
+    ClientConnS *theclass = static_cast<ClientConnS *>( req->data );
+    assert( theclass );
+    uvnet *parent = static_cast<uvnet *>( theclass->parent_server );
+    assert( parent );
+    if( parent->writeparam_list.size() > parent->backlog ) { //Maxlist
+        FreeWriteParam( ( write_param * )req );
+    } else {
+        parent->writeparam_list.push_back( ( write_param * )req );
+    }
+    if( status < 0 ) {
+        DebugLog( D_INFO, D_NETWORK ) << "send data error:" << GetUVError( status );
+    }
 }
 
 ClientConnS *uvnet::AllocTcpClientCtx( void *parentserver, size_t suggested_size )
 {
     ClientConnS *ctx = ( ClientConnS * )malloc( sizeof( *ctx ) );
+    uvnet *ps = static_cast<uvnet *>( parentserver );
+    assert( ps );
+    ctx->need_tls = ps->protocol->need_tls;
+    if( ctx->need_tls ) {
+        ctx->tls = evt_ctx_get_tls( &ps->tls_ctx );
+        assert( ctx->tls != NULL );
+        ctx->tls->data = ctx;
+    }
     ctx->packet = new PacketSync;
     ctx->read_buf.base = ( char * )malloc( suggested_size );
     ctx->read_buf.len = suggested_size;
-    ctx->parent_server = parentserver;
+    ctx->parent_server = ps;
     return ctx;
 }
 
@@ -357,16 +482,28 @@ void uvnet::FreeWriteParam( write_param *param )
 
 void uvnet::StartThread( void *arg )
 {
-    uvnet *theclass = ( uvnet * )arg;
+    uvnet *theclass = static_cast<uvnet *>( arg );
+    assert( theclass );
     //theclass->startstatus_ = START_FINISH;
     theclass->run_loop();
     //the server is close when come here
-    //theclass->isclosed_ = true;
+    uv_mutex_lock( &theclass->mutex_cl );
+    for( auto it = theclass->client_map.begin(); it != theclass->client_map.end(); ++it ) {
+        auto data = it->second;
+        data->Close();
+    }
+    uv_walk( &theclass->mloop, CloseWalkCB, theclass ); //close all handle in loop
     DebugLog( D_INFO, D_NETWORK ) << "Server is closed.";
     if_exit = true;
-    //    if (theclass->closedcb_) {
-    //        theclass->closedcb_(-1, theclass->closedcb_userdata_);
-    //    }
+}
+
+void uvnet::CloseWalkCB( uv_handle_t *handle, void *arg )
+{
+    uvnet *theclass = static_cast<uvnet *>( arg );
+    assert( theclass );
+    if( !uv_is_closing( handle ) ) {
+        uv_close( handle, nullptr );
+    }
 }
 
 inline std::string uvnet::GetUVError( int errcode )
@@ -390,22 +527,38 @@ inline std::string uvnet::GetUVError( int errcode )
     return err;
 }
 
+void ClientConnS::Close_tls( evt_tls_t *tls, int status )
+{
+    ( void )status;
+    ClientConnS *theclass = static_cast<ClientConnS *>( tls->data );
+    assert( theclass );
+    uv_close( ( uv_handle_t * )&theclass->tcphandle, AfterClientClose );
+}
+
 void ClientConnS::Close()
 {
-    uv_close( ( uv_handle_t * )&tcphandle, AfterClientClose );
-    DebugLog( D_INFO, D_NETWORK ) << "client(" << clientid << ")close";
+    if( need_tls ) {
+        evt_tls_close( tls, Close_tls );
+    } else {
+        uv_close( ( uv_handle_t * )&tcphandle, AfterClientClose );
+    }
+    DebugLog( D_INFO, D_NETWORK ) << "client close";
 }
 
 void ClientConnS::AfterClientClose( uv_handle_t *handle )
 {
     ClientConnS *theclass = static_cast<ClientConnS *>( handle->data );
     assert( theclass );
+    if( theclass->need_tls ) {
+        evt_tls_free( theclass->tls );
+    }
     if( handle == ( uv_handle_t * )&theclass->tcphandle ) {
         //theclass->isclosed = true;
         if( theclass->closedcb ) { //notice tcpserver the client had closed
             theclass->closedcb( theclass, theclass->closedcb_userdata );
         }
     }
+    //free( handle );
 }
 
 void ClientConnS::SetClosedCB( TcpCloseCB pfun, void *userdata )
@@ -415,47 +568,3 @@ void ClientConnS::SetClosedCB( TcpCloseCB pfun, void *userdata )
     closedcb_userdata = userdata;
 }
 
-//ClientData::ClientData( ClientConnS *control, int clientid )
-//    : client_handle( control )
-//    , client_id( clientid ), isclosed( false )
-//{}
-//
-//ClientData::~ClientData()
-//{
-//    Close();
-//    //while will block loop.
-//    //the right way is new AcceptClient and delete it on SetClosedCB'cb
-//    while( !isclosed ) {
-//        std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
-//    }
-//}
-//
-//void ClientData::Close()
-//{
-//    if( isclosed ) {
-//        return;
-//    }
-//    client_handle->tcphandle.data = this;
-//    //send close command
-//    uv_close( ( uv_handle_t * )&client_handle->tcphandle, AfterClientClose );
-//    DebugLog( D_INFO, D_NETWORK ) << "client(" << client_id << ")close";
-//}
-//
-//void ClientData::AfterClientClose( uv_handle_t *handle )
-//{
-//    ClientData *theclass = static_cast<ClientData *>( handle->data );
-//    assert( theclass );
-//    if( handle == ( uv_handle_t * )&theclass->client_handle->tcphandle ) {
-//        theclass->isclosed = true;
-//        if( theclass->closedcb ) { //notice tcpserver the client had closed
-//            theclass->closedcb( theclass->client_id, theclass->closedcb_userdata );
-//        }
-//    }
-//}
-//
-//void ClientData::SetClosedCB( TcpCloseCB pfun, void *userdata )
-//{
-//    //AfterRecv trigger this cb
-//    closedcb = pfun;
-//    closedcb_userdata = userdata;
-//}

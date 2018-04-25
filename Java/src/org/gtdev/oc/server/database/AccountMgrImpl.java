@@ -61,4 +61,13 @@ public final class AccountMgrImpl extends Database {
     public static int updatePwd(long UID, String OldPwdMd5, String NewPwdMd5) {
         return -1;
     }
+    
+    public static int insLoginHistory(long UID, String IP_addr) {
+    	return -1;
+    }
+    
+    public static String[] getLoginHistory(long UID, short limit) {
+    	return null;
+    }
+    
 }

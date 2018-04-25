@@ -1,106 +1,88 @@
 #include "org_gtdev_oc_server_JNInterface.h"
 #include "debug.h"
 #include "mfilesystem.h"
+#include "config.h"
 #include "export.h"
-/**
- * Priority constant for the println method; use Log.v.
-public static final int VERBOSE = 2;
- * Priority constant for the println method; use Log.d.
-public static final int DEBUG = 3;
- * Priority constant for the println method; use Log.i.
-public static final int INFO = 4;
- * Priority constant for the println method; use Log.w.
-public static final int WARN = 5;
- * Priority constant for the println method; use Log.e.
-public static final int ERROR = 6;
- * Priority constant for the println method.
-public static final int ASSERT = 7;
- */
-
-std::string jstr2str( JNIEnv *env, jstring str );
+#include "proto.h"
+#include "jImpl.h"
 
 JNIEXPORT jint JNICALL Java_org_gtdev_oc_server_JNInterface_println
 ( JNIEnv *env, jclass, jint priority, jstring tag, jstring msg )
 {
+    jUtils u( env );
     switch( priority ) {
         case 2:
-            DebugLog( "VERBOSE", jstr2str( env, tag ) ) << jstr2str( env, msg );
+            DebugLog( "VERBOSE", u.jstr2str( tag ) ) << u.jstr2str( msg );
             break;
         case 3:
-            DebugLog( "DEBUG", jstr2str( env, tag ) ) << jstr2str( env, msg );
+            DebugLog( "DEBUG", u.jstr2str( tag ) ) << u.jstr2str( msg );
             break;
         case 4:
-            DebugLog( "INFO", jstr2str( env, tag ) ) << jstr2str( env, msg );
+            DebugLog( "INFO", u.jstr2str( tag ) ) << u.jstr2str( msg );
             break;
         case 5:
-            DebugLog( "WARN", jstr2str( env, tag ) ) << jstr2str( env, msg );
+            DebugLog( "WARN", u.jstr2str( tag ) ) << u.jstr2str( msg );
             break;
         case 6:
-            DebugLog( "ERROR", jstr2str( env, tag ) ) << jstr2str( env, msg );
+            DebugLog( "ERROR", u.jstr2str( tag ) ) << u.jstr2str( msg );
             break;
         case 7:
-            DebugLog( "ASSERT", jstr2str( env, tag ) ) << jstr2str( env, msg );
+            DebugLog( "ASSERT", u.jstr2str( tag ) ) << u.jstr2str( msg );
             break;
     }
     return 0;
 }
 
-std::string jstr2str( JNIEnv *env, jstring jStr )
+JNIEXPORT jboolean JNICALL Java_org_gtdev_oc_server_JNInterface_loadConf
+( JNIEnv *env, jclass, jobject m )
 {
-    /*if (!jStr)
-            return "";
-    const jclass stringClass = env->GetObjectClass(jStr);
-    const jmethodID getBytes = env->GetMethodID(stringClass, "getBytes", "(Ljava/lang/String;)[B");
-    const jbyteArray stringJbytes = (jbyteArray) env->CallObjectMethod(jStr, getBytes, env->NewStringUTF("UTF-8"));
+    if( !conf ) {
+        return false;
+    }
+    jclass mapClass = env->GetObjectClass( m );
+    jmethodID put = env->GetMethodID( mapClass, "put",
+                                      "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;" );
 
-    size_t length = (size_t) env->GetArrayLength(stringJbytes);
-    jbyte* pBytes = env->GetByteArrayElements(stringJbytes, NULL);
-
-    std::string ret = std::string((char *)pBytes, length);
-    env->ReleaseByteArrayElements(stringJbytes, pBytes, JNI_ABORT);
-
-    env->DeleteLocalRef(stringJbytes);
-    env->DeleteLocalRef(stringClass);
-    return ret;*/
-    const char *cstr = env->GetStringUTFChars( jStr, JNI_FALSE );
-    std::string str = std::string( cstr );
-    env->ReleaseStringUTFChars( jStr, cstr );
-    return str;
+    return true;
 }
 
-class javabr
+JNIEXPORT jstring JNICALL Java_org_gtdev_oc_server_JNInterface_getPath
+( JNIEnv *env, jclass, jstring key )
 {
-    private:
-        JNIEnv *env;
-        JavaVM *jvm;
-    public:
-        DLL_PUBLIC javabr();
-        DLL_PUBLIC ~javabr();
+    jUtils u( env );
+    std::string ckey = u.jstr2str( key );
+    if( PATH_CLASS::FILENAMES.count( ckey ) ) {
+        return u.str2jstr( PATH_CLASS::FILENAMES[ckey] );
+    }
+    return ( jstring )env->NewGlobalRef( NULL );
+}
 
-};
-
-javabr::javabr()
+JNIEXPORT void JNICALL Java_org_gtdev_oc_server_JNInterface_getAllPaths
+( JNIEnv *env, jclass, jobject m )
 {
-    JavaVMOption jvmopt[1];
-    jvmopt[0].optionString = ( char * )std::string( "-Djava.class.path=" +
-                             PATH_CLASS::get_pathname( "javadir" ) ).c_str();
-
-    JavaVMInitArgs vmArgs;
-    vmArgs.version = JNI_VERSION_1_8;
-    vmArgs.nOptions = 1;
-    vmArgs.options = jvmopt;
-    vmArgs.ignoreUnrecognized = JNI_TRUE;
-
-    // Create the JVM
-    long flag = JNI_CreateJavaVM( &jvm, ( void ** )&env, &vmArgs );
-    if( flag == JNI_ERR ) {
-        DebugLog( D_WARNING, D_JAVA ) << "Error creating JVM.";
-        return;
+    jclass mapClass = env->GetObjectClass( m );
+    jmethodID put = env->GetMethodID( mapClass, "put",
+                                      "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;" );
+    for( auto const it : PATH_CLASS::FILENAMES ) {
+        env->CallObjectMethod( m, put, env->NewStringUTF( it.first.c_str() ),
+                               env->NewStringUTF( it.second.c_str() ) );
     }
 }
 
-javabr::~javabr()
+JNIEXPORT jstring JNICALL Java_org_gtdev_oc_server_JNInterface_displayProto
+( JNIEnv *env, jclass, jbyteArray d )
 {
-    jvm->DestroyJavaVM();
+    jUtils u( env );
+    std::stringstream ss( u.jArr2str( d ) );
+    ProtoDisplay display( ss );
+    display.do_display();
+    return u.str2jstr( display.output.str() );
+}
+
+JNIEXPORT jboolean JNICALL Java_org_gtdev_oc_server_JNInterface_doTransact
+( JNIEnv *env, jclass, jint, jbyteArray, jbyteArray, jint )
+{
+    jUtils u( env );
+    return false;
 }
 
