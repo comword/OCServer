@@ -8,8 +8,8 @@ import java.util.HashMap;
 public class JNInterface {
     static {
         try {
-            addLibraryPath(System.getProperty("user.dir")+File.separatorChar
-                           +".."+File.separatorChar+"Core");
+//            addLibraryPath(System.getProperty("user.dir")+File.separatorChar
+//                           +".."+File.separatorChar+"Core");
             System.loadLibrary("OCSCore");
         } catch (Exception e) {
             e.printStackTrace();
@@ -41,6 +41,11 @@ public class JNInterface {
         final String[] newPaths = Arrays.copyOf(paths, paths.length + 1);
         newPaths[newPaths.length-1] = pathToAdd;
         usrPathsField.set(null, newPaths);
+    }
+    
+    public static String PingJava() {
+    	Log.d("JNI", "Calling PingJava() from cpp.");
+    	return "Pong";
     }
 
     public static native int println(int priority, String tag, String msg);

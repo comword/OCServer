@@ -140,9 +140,9 @@ ifeq ($(TARGETSYSTEM), OSX)
   JAVA_HOME:=$(shell /usr/libexec/java_home)
   JVM_PATH:=$(shell dirname $$(find $(JAVA_HOME) -name "libjvm*"))
   SHAREDMARK = -dynamiclib
-  CXXFLAGS += -I/usr/local/opt/openssl/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/darwin
+  CXXFLAGS += -I/opt/local/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/darwin
   CXXFLAGS += -fPIC -fvisibility=hidden
-  LDFLAGS += -L/usr/local/opt/openssl/lib -L$(JVM_PATH) -ljvm
+  LDFLAGS += -L/opt/local/lib -L$(JVM_PATH) -ljvm
   EXTENSION = .dylib
   TARGET := $(TARGET)$(EXTENSION)
 endif

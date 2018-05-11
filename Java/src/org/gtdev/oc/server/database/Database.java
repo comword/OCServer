@@ -1,6 +1,6 @@
 /**
  * @file Database.java
- * @auther Ge Tong
+ * @auther Wang Daofei
  * Database class make connection to MySQL database using MySQL-Connector-Java driver.
  * The database name and connection information should be initialize first by static
  * method. The database should be created in utf8_general_ci collection.

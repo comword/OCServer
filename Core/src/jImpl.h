@@ -3,6 +3,7 @@
 
 #include <jni.h>
 #include <string>
+#include <vector>
 
 #include "export.h"
 
@@ -25,12 +26,16 @@ class DLL_PUBLIC JCommChannel
         JNIEnv *env;
         JavaVM *jvm;
         bool exloadedJVM = false;
+        jUtils *util = nullptr;
+        std::vector<std::string> ava_apps;
     public:
         JCommChannel(){}
-        virtual ~JCommChannel(){}
+        virtual ~JCommChannel(){ if(util!=nullptr) delete util; }
         void destroyJVM();
-        void createJVM(std::string classpath);
+        void createJVM(std::string classpath, std::string nlibrary);
         void loadEnv(JNIEnv *e);
+        std::string pingJava();
+        void loadJavaApps();
 };
 
 #endif /* SRC_JUTILS_H_ */

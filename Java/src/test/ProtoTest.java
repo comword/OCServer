@@ -28,7 +28,7 @@ import org.gtdev.oc.server.protocol.*;
   20,MAP: {12345:67890,abcde:ABCDE}
   21,SIMPLE_LIST: \x30\x31\x32\x33\x34\x35\x36\x37\x38\x39
   22,LIST: [65535,65536,65537,65538,65539,65540,65541,65542,65543,65544]
-  23,STRUCT_BEGIN: 
+  23,STRUCT_BEGIN:
   	1,INT: 12345678
   	2,STRING1: HelloWorld
   	3,SIMPLE_LIST: \x07\x7d\x02\x0d
@@ -58,12 +58,12 @@ public class ProtoTest {
         pd.display(st);
         System.out.println(pd);
     }
-    
+
     @Test
     public void proto_cppdisplay() {
-    	byte[] data = Utils.hexStr2Bytes(GDat);
-    	String res = JNInterface.displayProto(data);
-    	System.out.println(res);
+        byte[] data = Utils.hexStr2Bytes(GDat);
+        String res = JNInterface.displayProto(data);
+        System.out.println(res);
     }
 
 }

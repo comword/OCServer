@@ -3,6 +3,7 @@
 #include "uv_net.h"
 #include "jImpl.h"
 #include "config.h"
+#include "gameproto.h"
 
 #include <functional>
 #include <signal.h>
@@ -197,6 +198,8 @@ int main( int argc, char *argv[] )
     if( ires != 1 ) {
         DebugLog( D_WARNING, D_MAIN ) << "Load server certification error.";
     }
+    GameTCPProtocol pro;
+    net->SetProtocol(&pro);
     net->bind_net();
     net->Start();
     while( !if_exit ) {

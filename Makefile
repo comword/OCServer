@@ -272,8 +272,8 @@ ifeq ($(TARGETSYSTEM), OSX)
   endif
   JAVA_HOME:=$(shell /usr/libexec/java_home)
   JVM_PATH:=$(shell dirname $$(find $(JAVA_HOME) -name "libjvm*"))
-  CXXFLAGS += -I/usr/local/opt/openssl/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/darwin
-  LDFLAGS += -L/usr/local/opt/openssl/lib
+  CXXFLAGS += -I/opt/local/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/darwin
+  LDFLAGS += -L/opt/local/lib
   EXTENSION =
   TARGET := $(TARGET)$(EXTENSION)
   CORE_LIB := libOCSCore.dylib
@@ -299,7 +299,7 @@ endif
 
 LDFLAGS += -lssl -lcrypto
 
-all: $(TARGET) $(L10N)
+all: $(TARGET) $(L10N) Java/JavaP.jar
 	@
 $(TARGET): $(ODIR) $(OBJS) Core/$(CORE_LIB)
 	+$(LD) $(W32FLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS) -lOCSCore -luv
@@ -338,6 +338,9 @@ Core: Core/src/org_gtdev_oc_server_JNInterface.h
 
 Core/src/org_gtdev_oc_server_JNInterface.h:
 	javac -h Core/src Java/src/org/gtdev/oc/server/JNInterface.java
+	
+Java/JavaP.jar:
+	make -C Java
 
 unexport LDFLAGS
 unexport CXXFLAGS

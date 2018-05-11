@@ -19,6 +19,7 @@ public final class AccountMgrImpl extends Database {
     }
 
     public static int AuthPassword(long UID, String pwdMD5) {
+    	
         return -1;
     }
 
@@ -30,15 +31,15 @@ public final class AccountMgrImpl extends Database {
         return 0;
     }
 
-    public static int createAccount(long UID, String pwdMd5, String salt) {
+    public static int createAccount(long UID, String pwdMd5) {
         return -1;
     }
 
-    public static int createAccount(long UID, String UName, String pwdMd5, String salt) {
+    public static int createAccount(long UID, String UName, String pwdMd5) {
         return -1;
     }
 
-    public static int createAccount(long UID, String UName, String UEmail, String pwdMd5, String salt) {
+    public static int createAccount(long UID, String UName, String UEmail, String pwdMd5) {
         return -1;
     }
 
@@ -50,10 +51,6 @@ public final class AccountMgrImpl extends Database {
         return -1;
     }
 
-    public static String getSalt() {
-        return null;
-    }
-
     public static int updateUEmail(long UID, String Email) {
         return -1;
     }
@@ -61,13 +58,13 @@ public final class AccountMgrImpl extends Database {
     public static int updatePwd(long UID, String OldPwdMd5, String NewPwdMd5) {
         return -1;
     }
-    
+
     public static int insLoginHistory(long UID, String IP_addr) {
-    	return -1;
+        return -1;
     }
-    
+
     public static String[] getLoginHistory(long UID, short limit) {
-    	return null;
+        return null;
     }
-    
+
 }

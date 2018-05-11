@@ -1,6 +1,7 @@
 #include "jImpl.h"
 #include "debug.h"
 #include "mfilesystem.h"
+#include "config.h"
 
 std::string jUtils::jArr2str( jbyteArray array )
 {
@@ -48,47 +49,33 @@ std::string jUtils::jstr2str( jstring jStr )
     return str;
 }
 
-//javabr::javabr()
-//{
-//    JavaVMOption jvmopt[1];
-//    jvmopt[0].optionString = ( char * )std::string( "-Djava.class.path=" +
-//                             PATH_CLASS::get_pathname( "javadir" ) ).c_str();
-//
-//    JavaVMInitArgs vmArgs;
-//    vmArgs.version = JNI_VERSION_1_8;
-//    vmArgs.nOptions = 1;
-//    vmArgs.options = jvmopt;
-//    vmArgs.ignoreUnrecognized = JNI_TRUE;
-//
-//    // Create the JVM
-//    long flag = JNI_CreateJavaVM( &jvm, ( void ** )&env, &vmArgs );
-//    if( flag == JNI_ERR ) {
-//        DebugLog( D_WARNING, D_JAVA ) << "Error creating JVM.";
-//        return;
-//    }
-//}
-//
-//javabr::~javabr()
-//{
-//    jvm->DestroyJavaVM();
-//}
-void JCommChannel::createJVM(std::string classpath)
+//Classpath Java/JavaP.jar;Java/lib/mysql-connector-java-5.1.46.jar
+void JCommChannel::createJVM(std::string classpath, std::string nlibrary)
 {
-	JavaVMOption jvmopt[1];
-    jvmopt[0].optionString = (char*)("-Djava.class.path=" + classpath).c_str();
+	JavaVMOption jvmopt[2];
+	classpath = "-Djava.class.path=" + classpath;
+	nlibrary = "-Djava.library.path=" + nlibrary;
+	DebugLog( D_INFO, D_JAVA ) << classpath;
+	DebugLog( D_INFO, D_JAVA ) << nlibrary;
+    jvmopt[0].optionString = (char*)classpath.c_str();
+    jvmopt[1].optionString = (char*)nlibrary.c_str();
 
     JavaVMInitArgs vmArgs;
     vmArgs.version = JNI_VERSION_1_8;
-    vmArgs.nOptions = 1;
+    vmArgs.nOptions = 2;
     vmArgs.options = jvmopt;
-    vmArgs.ignoreUnrecognized = JNI_TRUE;
+    vmArgs.ignoreUnrecognized = false;
 
     // Create the JVM
     long flag = JNI_CreateJavaVM( &jvm, ( void ** )&env, &vmArgs );
-    if( flag == JNI_ERR ) {
-        DebugLog( D_WARNING, D_JAVA ) << "Error creating JVM.";
+    if( flag != JNI_OK ) {
+        DebugLog( D_WARNING, D_JAVA ) << "Error creating JVM: "<<flag;
         return;
     }
+    DebugLog( D_INFO, D_JAVA ) << "JVM loaded successfully.";
+    assert(env);
+    util = new jUtils(env);
+    loadJavaApps();
 }
 
 void JCommChannel::loadEnv(JNIEnv *e)
@@ -102,4 +89,36 @@ void JCommChannel::destroyJVM()
 {
 	if(!exloadedJVM)
 		jvm->DestroyJavaVM();
+}
+
+std::string JCommChannel::pingJava()
+{
+	jclass JNIcls = env->FindClass("org/gtdev/oc/server/JNInterface");
+	if(JNIcls == nullptr) {
+	    DebugLog(D_ERROR, D_JAVA) << "ERROR: JNInterface class not found.";
+	}
+	else {
+	    jmethodID mid = env->GetStaticMethodID(JNIcls, "PingJava", "()Ljava/lang/String;");
+	    if(mid == nullptr)
+	    	DebugLog(D_ERROR, D_JAVA) << "ERROR: static method String PingJava() not found !";
+	    else {
+	    	jstring returnString = (jstring) env->CallStaticObjectMethod(JNIcls, mid);
+	    	std::string res = util->jstr2str(returnString);
+	    	env->DeleteLocalRef(returnString);
+	    	return res;
+	    }
+	}
+	return std::string();
+}
+
+void JCommChannel::loadJavaApps()
+{
+	json c = conf->js;
+	ava_apps = c["server_apps"].get<std::vector<std::string>>();
+	std::string pr = "Enabled Java apps:\n";
+	for(auto a:ava_apps){
+		pr.append(a);
+		pr.push_back('\n');
+	}
+	DebugLog(D_INFO, D_JAVA) << pr;
 }

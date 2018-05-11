@@ -19,8 +19,8 @@ public class TestJNICpp {
     }
     @Test
     public void Config_test() {
-    	HashMap<String,String> m = new HashMap<String,String>();
-    	JNInterface.getAllPaths(m);
-    	System.out.println(m);
+        HashMap<String,String> m = new HashMap<String,String>();
+        JNInterface.getAllPaths(m);
+        System.out.println(m);
     }
 }
