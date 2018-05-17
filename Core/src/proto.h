@@ -1,3 +1,7 @@
+/*
+ * @file proto.h
+ * @author Ge Tong
+ */
 #pragma once
 #ifndef Proto_H
 #define Proto_H

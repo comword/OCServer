@@ -1,3 +1,7 @@
+/**
+ * @file FromMsg.h
+ * @auther Ge Tong
+ */
 #pragma once
 #ifndef FROMMSG_H
 #define FROMMSG_H
@@ -7,7 +11,6 @@
 #include "uv_net.h"
 
 typedef std::unordered_map<std::string, std::string> HashMap;
-
 
 class FromMsg
 {

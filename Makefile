@@ -260,6 +260,7 @@ ifeq ($(TARGETSYSTEM), LINUX)
   JAVA_HOME:=$(shell echo $$(dirname $$(dirname $$(readlink -f $$(which javac)))))
   JVM_PATH:=$(shell dirname $$(find $(JAVA_HOME) -name "libjvm*"))
   CXXFLAGS += -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
+  LDFLAGS += -L$(JVM_PATH) -ljvm
   EXTENSION =
   TARGET := $(TARGET)$(EXTENSION)
   CORE_LIB := libOCSCore.so
@@ -337,7 +338,7 @@ Core: Core/src/org_gtdev_oc_server_JNInterface.h
 	$(MAKE) -C Core
 
 Core/src/org_gtdev_oc_server_JNInterface.h:
-	javac -h Core/src Java/src/org/gtdev/oc/server/JNInterface.java
+	javac -h Core/src Java/src/org/gtdev/oc/server/JNInterface.java Java/src/org/gtdev/oc/server/Log.java
 	
 Java/JavaP.jar:
 	make -C Java

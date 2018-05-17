@@ -1,3 +1,9 @@
+/**
+ * @file main.cpp
+ * @auther Ge Tong
+ * @brief This file is the main entry of OC Server.
+ */
+
 #include "mfilesystem.h"
 #include "debug.h"
 #include "uv_net.h"

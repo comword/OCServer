@@ -1,3 +1,11 @@
+/**
+ * @file config.cpp
+ * @auther Ge Tong
+ * @brief This file implements the loading and saving of Json server configuration data.
+ * Json parsing library is json.hpp(nlohmann::json) https://github.com/nlohmann/json version 3.1.2
+ * When the game server program starts, it loads the default configuration file according to the input parameters
+ * from "userdir" defined in @link PATH_CLASS#FILENAMES
+ */
 #include "config.h"
 #include "debug.h"
 

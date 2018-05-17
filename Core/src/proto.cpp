@@ -1,3 +1,12 @@
+/*
+ * @file proto.cpp
+ * @author Ge Tong
+ * @brief This file defined the network packing protocol.
+ * For the network protocol we define two base classes, ProtoIn and ProtoOut,
+ * which are used as input and output of byte streams, respectively. And a
+ * ProtoDisplay class to print the debug message of a byte stream, ProtoStructBase
+ * class to define a handler to read or write custom structure to the byte stream.
+ */
 #include "proto.h"
 #include "util.h"
 #include <fstream>

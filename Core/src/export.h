@@ -1,3 +1,7 @@
+/**
+ * @file export.h
+ * @auther Ge Tong
+ */
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef BUILDING_DLL
 #ifdef __GNUC__

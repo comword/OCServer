@@ -180,7 +180,7 @@ $(ODIR)/%.o: $(SRC_DIR)/%.cpp
 
 export ODIR _OBJS LDFLAGS CXX W32FLAGS DEFINES CXXFLAGS VERSION
 clean: clean-tests
-	rm src/org_gtdev_oc_server_JNInterface.h
+	rm -f src/org_gtdev_oc_server_JNInterface.h
 	rm -rf *$(TARGET_NAME).dll *$(TARGET_NAME).so *$(TARGET_NAME).dylib *$(TARGET_NAME).a
 	rm -rf *obj
 astyle:

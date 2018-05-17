@@ -1,5 +1,7 @@
 package org.gtdev.oc.server.channel;
 
+import java.nio.ByteBuffer;
+
 import org.gtdev.oc.server.protocol.*;
 
 public interface AppPort {
@@ -55,11 +57,10 @@ public interface AppPort {
 
         //This method is CPP entry point.
         @SuppressWarnings("unused")
-        private boolean execTransact(int code, byte[] dataObj, byte[] replyObj, int flags) {
+        private boolean execTransact(int code, byte[] dataObj, ByteBuffer replyObj, int flags) {
             ProtoInputStream is = new ProtoInputStream(dataObj);
-            ProtoOutputStream os = new ProtoOutputStream();
+            ProtoOutputStream os = new ProtoOutputStream(replyObj);
             boolean res = transact(code,is,os,flags);
-            replyObj = os.toByteArray();
             return res;
         }
     }

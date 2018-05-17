@@ -1,3 +1,8 @@
+/**
+ * @file jni.cpp
+ * @auther Ge Tong
+ * @brief Implements of native methods exported from JNInterface.java
+ */
 #include "org_gtdev_oc_server_JNInterface.h"
 #include "debug.h"
 #include "mfilesystem.h"

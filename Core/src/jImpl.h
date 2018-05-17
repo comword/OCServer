@@ -1,9 +1,14 @@
+/**
+ * @file jImpl.h
+ * @auther Ge Tong
+ */
 #ifndef SRC_JUTILS_H_
 #define SRC_JUTILS_H_
 
 #include <jni.h>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "export.h"
 
@@ -28,6 +33,7 @@ class DLL_PUBLIC JCommChannel
         bool exloadedJVM = false;
         jUtils *util = nullptr;
         std::vector<std::string> ava_apps;
+        std::unordered_map<std::string,jobject> reg_apps;
     public:
         JCommChannel(){}
         virtual ~JCommChannel(){ if(util!=nullptr) delete util; }
@@ -35,7 +41,9 @@ class DLL_PUBLIC JCommChannel
         void createJVM(std::string classpath, std::string nlibrary);
         void loadEnv(JNIEnv *e);
         std::string pingJava();
-        void loadJavaApps();
+        void loadJavaAppsConf();
+        bool loadJavaApp(std::string classpath);
+        bool execTransact(jobject obj, int code, std::string toapp, std::string& fromapp, int flags);
 };
 
 #endif /* SRC_JUTILS_H_ */

@@ -10,6 +10,10 @@ public class LoginApp extends AppPort.AppPortImpl {
 	public static final int CODE_LOGOUT = 2;
 	public static final int CODE_REGISTER = 3;
 	public static final int CODE_CLHELLO = 4;
+	
+	public LoginApp() {
+		
+	}
 
     @Override
     public byte[] dump() {

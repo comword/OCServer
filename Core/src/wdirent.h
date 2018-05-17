@@ -1,4 +1,3 @@
-#pragma once
 /*
 * dirent.h - dirent API for Microsoft Visual Studio
 *
@@ -90,6 +89,7 @@
 * May 28 1998, Toni Ronkko
 * First version.
 *****************************************************************************/
+#pragma once
 #ifndef DIRENT_H
 #define DIRENT_H
 

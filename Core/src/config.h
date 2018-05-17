@@ -1,3 +1,8 @@
+/**
+ * @file config.h
+ * @auther Ge Tong
+ */
+
 #include "json.hpp"
 #include "export.h"
 

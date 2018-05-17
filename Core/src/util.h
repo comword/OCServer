@@ -1,3 +1,7 @@
+/*
+ * @file util.h
+ * @author Ge Tong
+ */
 #include <string>
 #include <vector>
 #include "export.h"

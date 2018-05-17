@@ -1,3 +1,10 @@
+/**
+ * @file debug.cpp
+ * @auther Ge Tong
+ * @brief This is an advanced debugging system with logging support.
+ * Use DebugLog(debugLevel, debugClass)<<"Text";
+ *
+ */
 #include "export.h"
 #include "debug.h"
 #include "mfilesystem.h"

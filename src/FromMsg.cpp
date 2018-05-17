@@ -1,3 +1,8 @@
+/**
+ * @file FromMsg.cpp
+ * @auther Ge Tong
+ */
+
 #include "FromMsg.h"
 void FromMsg::ParsePacket( const NetPacket &packethead, const char *packetdata )
 {

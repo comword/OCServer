@@ -1,3 +1,8 @@
+/**
+ * @file gameproto.h
+ * @auther Ge Tong
+ */
+
 #include <string>
 
 #include "tcpprotocol.h"

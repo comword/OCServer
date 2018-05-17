@@ -1,3 +1,11 @@
+/**
+ * @file mfilesystem.cpp
+ * @auther Ge Tong
+ * @brief This file wraps the operation functions of the file system on different platforms.
+ * This implements the operation functions of the file system on Linux, OSX and Windows.
+ * It use a map to records the absolute path of the related folder, and use @link PATH_CLASS::get_pathname
+ * to get a record from the map.
+ */
 #include "mfilesystem.h"
 
 #include <stdexcept>

@@ -1,3 +1,8 @@
+/*
+ * @file util.cpp
+ * @author Ge Tong
+ * @brief This file defined some useful functions.
+ */
 #include "util.h"
 #include <string.h>
 #include <stdlib.h>

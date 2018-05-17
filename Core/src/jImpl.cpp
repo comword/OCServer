@@ -1,3 +1,10 @@
+/**
+ * @file jImpl.cpp
+ * @auther Ge Tong
+ * @brief This file contains the utilities communicating to Java parts.
+ * This class initializes the JVM and implements several useful type casting
+ * functions are defined, including jstring<->std::string, jbyteArray<->std::string
+ */
 #include "jImpl.h"
 #include "debug.h"
 #include "mfilesystem.h"
@@ -75,7 +82,7 @@ void JCommChannel::createJVM(std::string classpath, std::string nlibrary)
     DebugLog( D_INFO, D_JAVA ) << "JVM loaded successfully.";
     assert(env);
     util = new jUtils(env);
-    loadJavaApps();
+    loadJavaAppsConf();
 }
 
 void JCommChannel::loadEnv(JNIEnv *e)
@@ -111,14 +118,36 @@ std::string JCommChannel::pingJava()
 	return std::string();
 }
 
-void JCommChannel::loadJavaApps()
+void JCommChannel::loadJavaAppsConf()
 {
 	json c = conf->js;
 	ava_apps = c["server_apps"].get<std::vector<std::string>>();
-	std::string pr = "Enabled Java apps:\n";
+	std::string pr = "Enabled Java apps:";
 	for(auto a:ava_apps){
-		pr.append(a);
 		pr.push_back('\n');
+		pr.append(a);
 	}
 	DebugLog(D_INFO, D_JAVA) << pr;
+}
+
+bool JCommChannel::loadJavaApp(std::string classpath)
+{
+	jclass cls = env->FindClass(classpath.c_str());
+	if(cls == nullptr) {
+		DebugLog(D_WARNING, D_JAVA) << "class not found: "<<classpath;
+		return false;
+	}
+	jmethodID mid = env->GetMethodID( cls, "<init>", "()V" );
+	jobject app = env->NewObject(cls, mid);
+
+	return false;
+}
+
+bool JCommChannel::execTransact(jobject obj, int code, std::string toapp, std::string& fromapp, int flags)
+{
+	jclass cls = env->GetObjectClass(obj);
+	assert(cls);
+	jmethodID mid = env->GetMethodID( cls, "execTransact", "(I[BLjava/nio/ByteBuffer;I)Z" );
+	bool res = false;
+	return res;
 }
