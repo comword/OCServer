@@ -1,8 +1,11 @@
 package test;
 
+import java.nio.ByteBuffer;
+
 import org.gtdev.oc.server.LoginApp;
 import org.gtdev.oc.server.channel.AppPort;
-import org.gtdev.oc.server.protocol.*;
+import org.gtdev.oc.server.protocol.ProtoInputStream;
+import org.gtdev.oc.server.protocol.ProtoOutputStream;
 import org.junit.Test;
 
 public class TestLogin {
@@ -14,7 +17,7 @@ public class TestLogin {
 		ProtoOutputStream w = new ProtoOutputStream();
 		w.write((long)1, AppPort.PROTO_APP_FIRST_TAG);
 		w.write("abcd", AppPort.PROTO_APP_FIRST_TAG + 1);
-		Logindata = new ProtoInputStream(w.getByteBuffer().flip());
+		Logindata = new ProtoInputStream((ByteBuffer) w.getByteBuffer().flip());
 	}
 	
 	@Test
@@ -22,6 +25,5 @@ public class TestLogin {
 		int code = LoginApp.CODE_LOGIN;
 		ProtoOutputStream reply = new ProtoOutputStream();
 		boolean res = la.transact(code, Logindata, reply, 0);
-		
     }
 }

@@ -31,7 +31,7 @@ public class LoginApp extends AppPort.AppPortImpl {
             String pwdMD5 = "";
             pwdMD5 = data.read(pwdMD5, PROTO_APP_FIRST_TAG + 1, true);
             int res = -1;
-            res = AccountMgrImpl.AuthPassword(UID, pwdMD5);
+            res = AccountMgrImpl.getInstance().AuthPassword(UID, pwdMD5);
             String token = "";
             reply.write(res, PROTO_APP_FIRST_TAG);
             reply.write(token,PROTO_APP_FIRST_TAG + 1);

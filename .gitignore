@@ -1,3 +1,6 @@
+# Testing database
+Java/OCDatabase.db
+
 # Prebuilt external libraries
 External/sysroot/
 
@@ -23,8 +26,10 @@ OCServer
 obj/*
 Core/obj/*
 Core/tests/obj/*
+Core/tests/OCServer_test
 visualcpp/x86
 visualcpp/x64
+Java/JavaP.jar
 
 # Precompiled Headers
 *.gch

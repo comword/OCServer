@@ -1,8 +1,10 @@
 package test;
 
-import org.junit.Test;
 import org.gtdev.oc.server.JNInterface;
-import org.gtdev.oc.server.protocol.*;
+import org.gtdev.oc.server.protocol.ProtoDisplayer;
+import org.gtdev.oc.server.protocol.ProtoInputStream;
+import org.gtdev.oc.server.protocol.Utils;
+import org.junit.Test;
 
 /*
   * Test data generated from cpp

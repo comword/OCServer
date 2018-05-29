@@ -317,7 +317,7 @@ $(ODIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(DEFINES) $(CXXFLAGS) -c $< -o $@
 
 export ODIR _OBJS LDFLAGS CXX LD AR STRIP W32FLAGS DEFINES CXXFLAGS VERSION_STR TARGETSYSTEM
-clean: clean-Core
+clean: clean-Core clean-Java
 	rm -rf *$(TARGET_NAME) *$(TARGET_NAME).a *$(TARGET_NAME).exe
 	rm -rf doxygen_doc/html
 	rm -rf *obj
@@ -331,6 +331,9 @@ astyle-all: $(SOURCES) $(HEADERS)
 clean-Core:
 	$(MAKE) -C Core clean
 
+clean-Java:
+	$(MAKE) -C Java clean
+
 Core/$(CORE_LIB): Core/src/org_gtdev_oc_server_JNInterface.h
 	$(MAKE) -C Core
 
@@ -339,7 +342,7 @@ Core: Core/src/org_gtdev_oc_server_JNInterface.h
 
 Core/src/org_gtdev_oc_server_JNInterface.h:
 	javac -h Core/src Java/src/org/gtdev/oc/server/JNInterface.java Java/src/org/gtdev/oc/server/Log.java
-	
+
 Java/JavaP.jar:
 	make -C Java
 
@@ -352,4 +355,4 @@ external:
 docs:
 	doxygen doxygen_doc/doxygen_conf
 
-.PHONY: clean-Core Core clean astyle astyle-all external docs
+.PHONY: clean-Java clean-Core Core clean astyle astyle-all external docs

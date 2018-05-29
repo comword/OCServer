@@ -47,7 +47,7 @@ public final class Utils {
         out.append((char) lowDigits[byteValue]);
         size--;
         for (; size > 0; size--) {
-            out.append(' ');
+            //out.append(' ');
             byteValue = in.get() & 0xFF;
             out.append((char) highDigits[byteValue]);
             out.append((char) lowDigits[byteValue]);

@@ -8,8 +8,8 @@ import java.util.HashMap;
 public class JNInterface {
     static {
         try {
-//            addLibraryPath(System.getProperty("user.dir")+File.separatorChar
-//                           +".."+File.separatorChar+"Core");
+            addLibraryPath(System.getProperty("user.dir")+File.separatorChar
+                           +".."+File.separatorChar+"Core");
             System.loadLibrary("OCSCore");
         } catch (Exception e) {
             e.printStackTrace();
