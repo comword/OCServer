@@ -13,7 +13,7 @@
 #pragma comment(lib,"libeay32d.lib")
 #endif
 #endif
-typedef void ( *GetFullPacket )( const NetPacket &packethead, const char *packetdata,
+typedef void ( *GetFullPacket )( const NetPacket &packethead, char *packetdata,
                                  void *userdata );
 
 #ifndef BUFFER_SIZE

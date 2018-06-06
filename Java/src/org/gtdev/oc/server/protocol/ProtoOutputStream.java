@@ -27,7 +27,7 @@ public class ProtoOutputStream {
     }
 
     public ProtoOutputStream() {
-        this(128);
+        this(255);
     }
 
     public ByteBuffer getByteBuffer() {

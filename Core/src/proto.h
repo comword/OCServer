@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include "export.h"
 
 #define ProtoBYTE 0
@@ -28,7 +29,7 @@
 #define ProtoSTRUCT_END 11
 #define ProtoZERO_TAG 12
 
-using ProtoMap = std::map<std::string, std::string>;
+//using ProtoMap = std::map<std::string, std::string>;
 
 template <typename T>
 using is_vector = std::is_same<T, std::vector< typename T::value_type,
@@ -103,7 +104,7 @@ class DLL_PUBLIC ProtoIn
         char read( float &f );
         char read( double &d );
         char read( std::string &s );
-        char read( ProtoMap &m );
+        //       char read( ProtoMap &m );
         char read( std::vector<char> &bl );
 
         template<typename T, typename std::enable_if<std::is_convertible<T *, ProtoStructBase *>::value>::type * = nullptr>
@@ -145,10 +146,11 @@ class DLL_PUBLIC ProtoIn
             return res;
         }
 
-        template < typename T, typename std::enable_if <
-                       !std::is_same<typename T::key_type, typename T::value_type>::value >::type * = nullptr
-                   >
-        char read( T &m ) {
+        //        template < typename T, typename std::enable_if <
+        //                       !std::is_same<typename T::key_type, typename T::value_type>::value >::type * = nullptr
+        //                   >
+        template<template <typename...> class Map, typename K, typename V, typename Cmp, typename Alloc>
+        char read( Map<K, V, Cmp, Alloc> &m ) {
             ProtoHead head = this->readHead();
             if( head.type != ProtoMAP ) {
                 error( "Proto: unknown type when read map, got type " + std::to_string( head.type ),
@@ -158,8 +160,8 @@ class DLL_PUBLIC ProtoIn
             int len;
             read( len );
             for( int i = 0; i < len; i++ ) {
-                typename T::key_type k;
-                typename T::value_type v;
+                K k;
+                V v;
                 if( read( k ) == 0 )
                     if( read( v ) == 1 ) {
                         m[std::move( k )] = std::move( v );

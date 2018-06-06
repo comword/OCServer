@@ -10,25 +10,25 @@ package org.gtdev.oc.server.database;
 import java.sql.*;
 
 public abstract class Database {
-	enum DBtype {
-		MYSQL,
-		SQLITE
-	}
+    enum DBtype {
+        MYSQL,
+        SQLITE
+    }
 
     private Connection dbconn;
     private Statement st = null;
     protected DBtype t;
-    
+
     //protected String prefix = "";
-    
+
     public void releaseStatement() throws SQLException {
-    	if(st != null)
-    		st.close();
+        if(st != null)
+            st.close();
     }
-    
-    Database(){
+
+    Database() {
     }
-    
+
     //String get_prefix() { return prefix;}
     //void set_prefix(String p) { prefix = p; }
 
@@ -54,7 +54,7 @@ public abstract class Database {
         }
         return 0;
     }
-    
+
     public int InitializeSQLite(String addr) {
         try {
             Class.forName("org.sqlite.JDBC");
@@ -79,9 +79,9 @@ public abstract class Database {
      * @return 0, Success; -1, Unknown System error; -2, Connection error.
      */
     public int createDatabase(String dbName, String addr, String uname, String pwd) {
-    	int res = Initialize(addr,uname,pwd);
-    	if(res!=0)
-    		return -1;
+        int res = Initialize(addr,uname,pwd);
+        if(res!=0)
+            return -1;
         try {
             Statement s = dbconn.createStatement();
             s.executeUpdate("CREATE DATABASE IF NOT EXISTS "+dbName);
@@ -101,22 +101,22 @@ public abstract class Database {
             return -2;
         }
         return 0;
-        
+
     }
-    
+
     protected ResultSet simple_query(String SQL) throws SQLException {
-    	if(st == null)
-    		st = dbconn.createStatement();
-		ResultSet rs = st.executeQuery(SQL);
-		//st.close();
+        if(st == null)
+            st = dbconn.createStatement();
+        ResultSet rs = st.executeQuery(SQL);
+        //st.close();
         return rs;
     }
-    
+
     protected void simple_update(String SQL) throws SQLException {
-    	if(st == null)
-    		st = dbconn.createStatement();
-		st.executeUpdate(SQL);
-		st.close();
+        if(st == null)
+            st = dbconn.createStatement();
+        st.executeUpdate(SQL);
+        st.close();
     }
 
     //! This method return the existing MySQL connection.

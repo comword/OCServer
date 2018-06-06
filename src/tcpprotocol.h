@@ -3,6 +3,7 @@
 #include <string>
 #include "net_base.h"
 
+struct ClientConnS;
 class TCPServerProtocolProcess
 {
     public:
@@ -14,7 +15,7 @@ class TCPServerProtocolProcess
         //packet     : the recv packet
         //buf        : the packet data
         //std::string: the response packet. no response can't return empty string.
-        virtual const std::string &ParsePacket( const NetPacket &packet, const char *buf ) = 0;
+        virtual void ParsePacket( ClientConnS &client, const NetPacket &packet, char *buf ) = 0;
 };
 
 #endif//TCP_SERVER_PROTOCOL_PROCESS_H

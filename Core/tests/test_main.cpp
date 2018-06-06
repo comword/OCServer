@@ -3,8 +3,11 @@
 #include "mfilesystem.h"
 #include "debug.h"
 #include "config.h"
+#include "jImpl.h"
 #include <stdio.h>
 #include <vector>
+
+JCommChannel *jc;
 
 int main( int argc, const char *argv[] )
 {
@@ -23,6 +26,14 @@ int main( int argc, const char *argv[] )
     limitDebugClass( DC_ALL );
     DebugLog( D_INFO, D_MAIN ) << "Version: " << VERSION;
     conf = new Configure( PATH_CLASS::FILENAMES["userdir"] + "config.json" );
+    std::string javadir = PATH_CLASS::get_pathname( "javadir" );
+    std::string basedir = PATH_CLASS::get_pathname( "basedir" );
+    DebugLog( D_INFO, D_JAVA ) << javadir;
+    jc = new JCommChannel();
+    jc->createJVM( javadir + "JavaP.jar:" + javadir + "lib/mysql-connector-java-5.1.46.jar",
+                   basedir + "Core" );
+    jc->load_allAvaJavaSrvs();
+    jc->InitDB(conf->js["db_addr"], conf->js["db_username"], conf->js["db_password"]);
     result = session.run();
     deinitDebug();
     return result;

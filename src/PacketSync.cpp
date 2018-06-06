@@ -125,7 +125,7 @@ void PacketSync::recvdata( const unsigned char *data, size_t len )
             truepacketlen = 0;
         }
         if( this->packet_cb_ ) {
-            this->packet_cb_( theNexPacket, ( const char * )thread_packetdata.base,
+            this->packet_cb_( theNexPacket, thread_packetdata.base,
                               this->packetcb_userdata_ );
         }
         parsetype = PARSE_NOTHING;

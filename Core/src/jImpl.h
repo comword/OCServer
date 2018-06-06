@@ -12,6 +12,8 @@
 
 #include "export.h"
 
+#define BASE_SVRS_CLASSPATH "org/gtdev/oc/server/services/"
+
 class DLL_PUBLIC jUtils
 {
     private:
@@ -27,23 +29,33 @@ class DLL_PUBLIC jUtils
 
 class DLL_PUBLIC JCommChannel
 {
-	private:
-        JNIEnv *env;
-        JavaVM *jvm;
+    private:
+        JNIEnv *env = nullptr;
+        JavaVM *jvm = nullptr;
         bool exloadedJVM = false;
         jUtils *util = nullptr;
-        std::vector<std::string> ava_apps;
-        std::unordered_map<std::string,jobject> reg_apps;
+        std::vector<std::string> ava_srvs;
+        std::unordered_map<std::string, jobject> reg_srvs;
     public:
-        JCommChannel(){}
-        virtual ~JCommChannel(){ if(util!=nullptr) delete util; }
+        JCommChannel() {}
+        virtual ~JCommChannel() {
+            destroyJVM();
+            if( util != nullptr ) {
+                delete util;
+            }
+        }
         void destroyJVM();
-        void createJVM(std::string classpath, std::string nlibrary);
-        void loadEnv(JNIEnv *e);
+        void createJVM( std::string classpath, std::string nlibrary );
+        void loadEnv( JNIEnv *e );
         std::string pingJava();
-        void loadJavaAppsConf();
-        bool loadJavaApp(std::string classpath);
-        bool execTransact(jobject obj, int code, std::string toapp, std::string& fromapp, int flags);
+        void loadJavaSrvConf();
+        bool loadJavaSrv( std::string classpath );
+        bool load_allAvaJavaSrvs();
+        bool execTransact( jobject obj, std::string tosrv, std::string &fromsrv, int flags );
+        jobject getService( std::string cmdName );
+        bool InitDB( std::string addr, std::string uname, std::string pwd);
 };
+
+extern JCommChannel *jc;
 
 #endif /* SRC_JUTILS_H_ */

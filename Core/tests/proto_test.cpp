@@ -33,7 +33,7 @@ struct TestUserInfo : public ProtoStructBase {
   070200010008fa171200bc614e260a48656c6c6f576f726c643d000004077d020dfb17f61803-
   454e44
  */
-std::stringstream test_data()
+std::stringstream proto_test_data()
 {
     TestUserInfo tui;
     tui.uin = 12345678;
@@ -82,11 +82,11 @@ std::stringstream test_data()
 
 TEST_CASE( "ProtoOut r/w full test" )
 {
-    std::stringstream res = test_data();
+    std::stringstream res = proto_test_data();
     std::string dat = res.str();
     std::string dathex;
     util::Buffer2String( dat, dathex );
-    WARN( dathex );
+    INFO( dathex );
     ProtoIn jin( res );
     int a;
     jin.read( a ); //1
@@ -148,7 +148,7 @@ TEST_CASE( "ProtoOut r/w full test" )
 }
 TEST_CASE( "ProtoDisplay test" )
 {
-    std::stringstream res = test_data();
+    std::stringstream res = proto_test_data();
     ProtoDisplay d( res );
     d.do_display();
     WARN( d.output.str() );

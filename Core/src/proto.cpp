@@ -9,6 +9,7 @@
  */
 #include "proto.h"
 #include "util.h"
+#include "debug.h"
 #include <fstream>
 #include <istream>
 #include <limits.h>
@@ -62,6 +63,7 @@ bool ProtoIn::skipToTag( int tag )
             }
             if( tag <= head.tag ) {
                 if( tag == head.tag ) {
+                    seek( tell() - head.len );
                     return true;
                 }
                 return false;
@@ -477,30 +479,30 @@ char ProtoIn::read( std::string &s )
     return head.tag;
 }
 
-char ProtoIn::read( ProtoMap &m )
-{
-    ProtoHead head = this->readHead();
-    if( head.type != ProtoMAP ) {
-        std::stringstream err;
-        err << "Proto: unknown type when read string map, got type " << head.type << " .";
-        error( err.str(), tell() ); //invalid type
-    }
-    int len;
-    read( len );
-    if( len < 0 ) {
-        std::stringstream err;
-        err << "Proto: size invalid when read string map, got size " << len << " .";
-        error( err.str(), tell() ); //invalid type
-    }
-    for( int i = 0; i < len; i++ ) {
-        std::string k, v;
-        if( read( k ) == 0 )
-            if( read( v ) == 1 ) {
-                m[std::move( k )] = std::move( v );
-            }
-    }
-    return head.tag;
-}
+//char ProtoIn::read( ProtoMap &m )
+//{
+//    ProtoHead head = this->readHead();
+//    if( head.type != ProtoMAP ) {
+//        std::stringstream err;
+//        err << "Proto: unknown type when read string map, got type " << head.type << " .";
+//        error( err.str(), tell() ); //invalid type
+//    }
+//    int len;
+//    read( len );
+//    if( len < 0 ) {
+//        std::stringstream err;
+//        err << "Proto: size invalid when read string map, got size " << len << " .";
+//        error( err.str(), tell() ); //invalid type
+//    }
+//    for( int i = 0; i < len; i++ ) {
+//        std::string k, v;
+//        if( read( k ) == 0 )
+//            if( read( v ) == 1 ) {
+//                m[std::move( k )] = std::move( v );
+//            }
+//    }
+//    return head.tag;
+//}
 
 char ProtoIn::read( std::vector<char> &bl )
 {
@@ -740,7 +742,7 @@ bool ProtoDisplay::display_Proto()
     double c;
     std::string d;
     std::vector<std::string> e;
-    ProtoMap f;
+    std::map<std::string, std::string> f;
     switch( head.type ) {
         case ProtoZERO_TAG:
         case ProtoBYTE:

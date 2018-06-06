@@ -42,10 +42,14 @@ public class JNInterface {
         newPaths[newPaths.length-1] = pathToAdd;
         usrPathsField.set(null, newPaths);
     }
-    
+
     public static String PingJava() {
-    	Log.d("JNI", "Calling PingJava() from cpp.");
-    	return "Pong";
+        Log.d("JNI", "Calling PingJava() from cpp.");
+        return "Pong";
+    }
+    
+    public static boolean InitDB(String addr, String uname, String pwd) {
+    	return false;
     }
 
     public static native int println(int priority, String tag, String msg);

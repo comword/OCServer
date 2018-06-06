@@ -5,7 +5,6 @@
 #include "debug.h"
 #include "uv_net.h"
 #include "util.h"
-#include "FromMsg.h"
 
 #include <assert.h>
 #include <chrono>
@@ -28,7 +27,8 @@ uvnet::uvnet()
     evt_ctx_set_nio( &tls_ctx, NULL, uv_tls_writer );
     iret = uv_mutex_init( &mutex_cl );
     if( iret ) {
-        DebugLog( D_ERROR, D_NETWORK ) << GetUVError( iret );
+        lasterrmsg = uvnet::GetUVError( iret );
+        DebugLog( D_ERROR, D_NETWORK ) << lasterrmsg;
     }
 }
 
@@ -377,21 +377,33 @@ bool uvnet::Start()
     return true;
 }
 
-void uvnet::GetPacket( const NetPacket &packethead, const char *packetdata,
+ClientConnS *uvnet::getClientByID( int cid )
+{
+    ClientConnS *res = nullptr;
+    uv_mutex_lock( &mutex_cl );
+    if( !( client_map.find( cid ) == client_map.end() ) ) {
+        res = client_map[cid];
+    }
+    uv_mutex_unlock( &mutex_cl );
+    return res;
+}
+
+void uvnet::GetPacket( const NetPacket &packethead, char *packetdata,
                        void *userdata )
 {
     DebugLog( D_INFO, D_NETWORK ) << "Get packet type " << std::to_string( packethead.type );
     assert( userdata );
     ClientConnS *theclass = ( ClientConnS * )userdata;
     uvnet *parent = ( uvnet * )theclass->parent_server;
-    std::string tmp;
-    util::Buffer2String( ( char * )packetdata, packethead.datalen, tmp );
-    DebugLog( D_INFO, D_NETWORK ) << tmp;
-    assert( parent->protocol != nullptr );
-    const std::string &senddata = parent->protocol->ParsePacket( packethead, packetdata );
-    if( !senddata.empty() ) {
-        parent->sendinl( senddata, theclass );
-    }
+    //    std::string tmp;
+    //    util::Buffer2String( ( char * )packetdata, packethead.datalen, tmp );
+    //    DebugLog( D_INFO, D_NETWORK ) << tmp;
+    //    assert( parent->protocol != nullptr );
+    //const std::string &senddata =
+    parent->protocol->ParsePacket( *theclass, packethead, packetdata );
+    //    if( !senddata.empty() ) {
+    //        parent->sendinl( senddata, theclass );
+    //    }
 }
 
 void uvnet::SetProtocol( TCPServerProtocolProcess *pro )
@@ -510,7 +522,7 @@ void uvnet::CloseWalkCB( uv_handle_t *handle, void *arg )
     }
 }
 
-inline std::string uvnet::GetUVError( int errcode )
+std::string uvnet::GetUVError( int errcode )
 {
     if( 0 == errcode ) {
         return "";

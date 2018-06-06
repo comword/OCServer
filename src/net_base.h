@@ -69,8 +69,8 @@ typedef struct {
     unsigned char header;   //packet header :1
     unsigned char tail;     //packet tail :2
     uint8_t type;           //packet type :3
-    uint32_t uid;           //user id :4-7
-    uint32_t datalen;       //packet data length :8-11
+    //uint32_t uid;           //user id :4-7
+    uint32_t datalen;       //packet data length :4-7
 } NetPacket;
 #define NET_PACKAGE_HEADLEN sizeof(NetPacket)
 
@@ -82,10 +82,10 @@ inline bool NetPacketToChar( const NetPacket &package, unsigned char *chardata )
     chardata[1] = package.header;
     chardata[2] = package.tail;
     chardata[3] = package.type;
-    if( !Int32ToChar( ( uint32_t )package.uid, chardata + 4 ) ) {
-        return false;
-    }
-    if( !Int32ToChar( ( uint32_t )package.datalen, chardata + 8 ) ) {
+    //    if( !Int32ToChar( ( uint32_t )package.uid, chardata + 4 ) ) {
+    //        return false;
+    //    }
+    if( !Int32ToChar( ( uint32_t )package.datalen, chardata + 4 ) ) {
         return false;
     }
     return true;
@@ -98,11 +98,11 @@ inline bool CharToNetPacket( const unsigned char *chardata, NetPacket &package )
     package.header = chardata[1];
     package.tail = chardata[2];
     package.type = chardata[3];
+    //    if( !CharToInt32( chardata + 4, tmp32 ) ) {
+    //        return false;
+    //    }
+    //    package.uid = tmp32;
     if( !CharToInt32( chardata + 4, tmp32 ) ) {
-        return false;
-    }
-    package.uid = tmp32;
-    if( !CharToInt32( chardata + 8, tmp32 ) ) {
         return false;
     }
     package.datalen = tmp32;

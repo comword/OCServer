@@ -64,8 +64,10 @@ class uvnet
         bool sendinl( const std::string &senddata, ClientConnS *client );
         bool Start();
         void SetProtocol( TCPServerProtocolProcess *pro );
-        static void GetPacket( const NetPacket &packethead, const char *packetdata,
+        ClientConnS *getClientByID( int cid );
+        static void GetPacket( const NetPacket &packethead, char *packetdata,
                                void *userdata );
+        static std::string GetUVError( int errcode );
 
     private:
         uv_tcp_t tserver;
@@ -77,7 +79,6 @@ class uvnet
         uv_loop_t mloop;
         uv_thread_t HW_start_thread;
         TCPServerProtocolProcess *protocol = nullptr;
-        inline static std::string GetUVError( int errcode );
         std::list<ClientConnS *> client_list;
         std::unordered_map<int, ClientConnS *> client_map;
         std::list<write_param *> writeparam_list;

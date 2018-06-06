@@ -10,6 +10,7 @@
 #include "jImpl.h"
 #include "config.h"
 #include "gameproto.h"
+#include "ev_dispatch.h"
 
 #include <functional>
 #include <signal.h>
@@ -28,6 +29,8 @@
 
 bool if_exit = false;
 uvnet *net;
+EvDispatch *msgq;
+JCommChannel *jc;
 void exit_handler( int s );
 
 namespace
@@ -194,9 +197,19 @@ int main( int argc, char *argv[] )
 #endif
     //net = new uvnet("0.0.0.0",9001,false);
     DebugLog( D_INFO, D_MAIN ) << "Version: " << VERSION;
-    std::string udir = PATH_CLASS::FILENAMES["userdir"];
+    std::string udir = PATH_CLASS::get_pathname( "userdir" );
+    std::string javadir = PATH_CLASS::get_pathname( "javadir" );
+    std::string basedir = PATH_CLASS::get_pathname( "basedir" );
     conf = new Configure( udir + "config.json" );
 
+    jc = new JCommChannel();
+    jc->createJVM( javadir + "JavaP.jar:" + javadir + "lib/mysql-connector-java-5.1.46.jar",
+                   basedir + "Core" );
+    jc->load_allAvaJavaSrvs();
+    jc->InitDB(conf->js["db_addr"], conf->js["db_username"], conf->js["db_password"]);
+
+    msgq = new EvDispatch();
+    msgq->Start();
     net = new uvnet();
     std::string cert = conf->js["server_cert"];
     std::string key = conf->js["server_key"];
@@ -205,7 +218,7 @@ int main( int argc, char *argv[] )
         DebugLog( D_WARNING, D_MAIN ) << "Load server certification error.";
     }
     GameTCPProtocol pro;
-    net->SetProtocol(&pro);
+    net->SetProtocol( &pro );
     net->bind_net();
     net->Start();
     while( !if_exit ) {
