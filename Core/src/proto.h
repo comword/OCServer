@@ -44,7 +44,7 @@ class ProtoDisplay;
 struct DLL_PUBLIC ProtoStructBase {
     protected:
         ProtoStructBase() {}
-        ~ProtoStructBase() {}
+        virtual ~ProtoStructBase() {}
 };
 
 class DLL_PUBLIC ProtoError : public std::runtime_error
@@ -221,7 +221,7 @@ class DLL_PUBLIC ProtoOut
             }
         }
 
-        void write( std::vector<char> v, int tag );
+        void write( std::vector<char> v, char tag );
 
         template<typename T>
         void write( const T &v, uint8_t tag,

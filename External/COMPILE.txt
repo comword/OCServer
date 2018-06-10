@@ -1,5 +1,5 @@
 export sysroot=$(pwd)/sysroot
-cd libuv-1.20.2
+cd libuv-1.20.3
 autogen.sh
 configure --prefix=$sysroot --host=x86_64-w64-mingw32
 make -j8

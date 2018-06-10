@@ -673,7 +673,7 @@ void ProtoOut::write( const char *s, char tag )
     write( std::string( s ), tag );
 }
 
-void ProtoOut::write( std::vector<char> v, int tag )
+void ProtoOut::write( std::vector<char> v, char tag )
 {
     writeHead( ProtoSIMPLE_LIST, tag );
     writeHead( ProtoBYTE, 0 );

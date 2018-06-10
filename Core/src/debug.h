@@ -36,15 +36,15 @@ enum DebugClass {
     DC_ALL    = ( 1 << 6 ) - 1
 };
 /** Initializes the debugging system, called exactly once from main() */
-extern "C" DLL_PUBLIC void setupDebug( std::string );
+DLL_PUBLIC void setupDebug( std::string );
 /** Opposite of setupDebug, shuts the debugging system down. */
-extern "C" DLL_PUBLIC void deinitDebug();
+DLL_PUBLIC void deinitDebug();
 
-extern "C" DLL_PUBLIC void limitDebugLevel( int );
+DLL_PUBLIC void limitDebugLevel( int );
 
-extern "C" DLL_PUBLIC void limitDebugClass( int );
+DLL_PUBLIC void limitDebugClass( int );
 
-extern "C" DLL_PUBLIC void DebugLog( int priority, std::string tag, std::string msg );
+DLL_PUBLIC void DebugLog( int priority, std::string tag, std::string msg );
 
 enum LogDirection {
     D_NONE = 0,

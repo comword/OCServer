@@ -203,7 +203,7 @@ int main( int argc, char *argv[] )
     conf = new Configure( udir + "config.json" );
 
     jc = new JCommChannel();
-    jc->createJVM( javadir + "JavaP.jar:" + javadir + "lib/mysql-connector-java-5.1.46.jar",
+    jc->createJVM( javadir + "JavaP.jar:" + javadir + "lib"+FILE_SEP+"mysql-connector-java-5.1.46.jar",
                    basedir + "Core" );
     jc->load_allAvaJavaSrvs();
     jc->InitDB(conf->js["db_addr"], conf->js["db_username"], conf->js["db_password"]);
@@ -215,7 +215,7 @@ int main( int argc, char *argv[] )
     std::string key = conf->js["server_key"];
     size_t ires = net->set_srvcert( udir + cert, udir + key );
     if( ires != 1 ) {
-        DebugLog( D_WARNING, D_MAIN ) << "Load server certification error.";
+        DebugLog( D_WARNING, D_MAIN ) << "Load server certification error. ret: " << ires;
     }
     GameTCPProtocol pro;
     net->SetProtocol( &pro );

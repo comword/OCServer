@@ -1,7 +1,6 @@
 package org.gtdev.oc.server.services;
 
 import org.gtdev.oc.server.Log;
-import org.gtdev.oc.server.MD5;
 import org.gtdev.oc.server.channel.AppPort;
 import org.gtdev.oc.server.database.AccountMgrImpl;
 import org.gtdev.oc.server.protocol.*;

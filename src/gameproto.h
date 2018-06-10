@@ -58,7 +58,7 @@ class ToMsg
         uint32_t Timeout;
         ClientConnS &client;
     public:
-        ToMsg( size_t bufsize );
+        ToMsg();
         ~ToMsg();
 };
 
@@ -70,7 +70,6 @@ class GameTCPProtocol : public TCPServerProtocolProcess
         void ParsePacket( ClientConnS &client, const NetPacket &packet, char *buf );
         bool sendMsg( ToMsg &msg );
     private:
-        std::string pro_packet;
         bool bufFromMsg( const NetPacket &packet, char *buf, FromMsg &msg );
 };
 #endif
