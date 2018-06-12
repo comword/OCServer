@@ -44,10 +44,10 @@ JNIEXPORT jboolean JNICALL Java_org_gtdev_oc_server_JNInterface_loadConf
     if( !conf ) {
         return false;
     }
-    jclass mapClass = env->GetObjectClass( m );
-    jmethodID put = env->GetMethodID( mapClass, "put",
-                                      "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;" );
-
+//    jclass mapClass = env->GetObjectClass( m );
+//    jmethodID put = env->GetMethodID( mapClass, "put",
+//                                      "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;" );
+//    
     return true;
 }
 

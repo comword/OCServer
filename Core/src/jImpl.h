@@ -5,7 +5,12 @@
 #ifndef SRC_JUTILS_H_
 #define SRC_JUTILS_H_
 
+#if (defined _WIN32 || defined WINDOWS)
+#include "wjni.h"
+#else
 #include <jni.h>
+#endif
+
 #include <string>
 #include <vector>
 #include <unordered_map>
