@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "util.h"
 #include <stdio.h>
+#include <string.h>
 #include <openssl/md5.h>
 #include <openssl/ssl.h>
 #include <openssl/bn.h>

@@ -16,10 +16,10 @@
  */
 enum DebugLevel {
     D_DEBUG         = 1,
-    D_INFO          = 1 << 2,
-    D_WARNING       = 1 << 3,
-    D_ERROR         = 1 << 4,
-    DL_ALL = ( 1 << 5 ) - 1
+    D_INFO          = 1 << 1,
+    D_WARNING       = 1 << 2,
+    D_ERROR         = 1 << 3,
+    DL_ALL = ( 1 << 4 ) - 1
 };
 /**
  * Debugging areas can be enabled for each of those areas separately.

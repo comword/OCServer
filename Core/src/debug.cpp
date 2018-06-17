@@ -32,7 +32,7 @@ static int debugLevel = DL_ALL;
 static int debugClass = DC_ALL;
 #else
 static int debugLevel = D_ERROR;
-static int debugClass = D_MAIN;
+static int debugClass = DC_ALL;
 #endif
 // Static defines
 bool test_dirty = false;

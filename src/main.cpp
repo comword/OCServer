@@ -104,17 +104,17 @@ int main( int argc, char *argv[] )
             }
         },
         {
-            "--loglevel", "<level of sever log>", "Set debug levels that should be logged. Available values are 0 to 7. D_ERROR is always logged. D_INFO=1, D_WARNING=2, D_ERROR=4.",
+            "--loglevel", "<level of sever log>", "Set debug levels that should be logged. Available values are 0 to 15. D_ERROR is always logged. D_DEBUG=1, D_INFO=2, D_WARNING=4, D_ERROR=8.",
             //help_section_system,
             []( int, const char **params ) -> int {
                 int bitmask = atoi( params[0] );
-                if( bitmask >= 0 && bitmask <= 7 )
+                if( bitmask >= 0 && bitmask <= 15 )
                 {
                     bitmask |= D_ERROR;
                     limitDebugLevel( bitmask );
                 } else
                 {
-                    throw std::runtime_error( std::string( "--loglevel available values are 0 to 7.\n" ) );
+                    throw std::runtime_error( std::string( "--loglevel available values are 0 to 15.\n" ) );
                 }
                 return 1;
             }

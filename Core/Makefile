@@ -1,10 +1,5 @@
 RELEASE_FLAGS = -Werror
 WARNINGS = -Wall -Wextra
-ifeq ($(shell sh -c 'uname -o 2>/dev/null || echo not'),Cygwin)
-  DEBUG =-g
-else
-  DEBUG =-g -D_GLIBCXX_DEBUG
-endif
 VERSION = 0.0.1
 TARGET_NAME = libOCSCore
 BUILD_DIR = $(CURDIR)
@@ -42,15 +37,6 @@ ifdef CLANG
     CXX = $(CROSS)clang++
     LD  = $(CROSS)clang++
   endif
-endif
-
-ifndef RELEASE
-  ifeq ($(shell $(CXX) -E -Og - < /dev/null > /dev/null 2>&1 && echo fog),fog)
-    OPTLEVEL = -Og
-  else
-    OPTLEVEL = -O0
-  endif
-  CXXFLAGS += $(OPTLEVEL)
 endif
 
 ifeq ($(shell sh -c 'uname -o 2>/dev/null || echo not'),Cygwin)
